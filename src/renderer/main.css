@@ -1,0 +1,57 @@
+:root {
+  --top-header-height: 24px;
+  --top-header-padding: 4px;
+}
+
+div#folder-broser {
+  margin: none;
+}
+
+div#current-path {
+  height: var(--top-header-height);
+  line-height: var(--top-header-height);
+  font: bold;
+  border-bottom: solid;
+  background: #ddd;
+  position: fixed;
+  padding: var(--top-header-padding);
+  top: 0;
+  width: 100%;
+  z-index: 1;
+}
+
+div#file-list {
+  padding-top: calc(4 * var(--top-header-padding) + var(--top-header-height));
+}
+
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  background: #eee;
+  text-decoration: underline;
+}
+
+.file-link {
+  color: #000;
+  padding: 4px;
+}
+
+.fiv-sqo {
+  /* make svgs greyscale */
+  filter: grayscale(100%);
+}
+.fiv-sqo.fiv-icon-pdf {
+  /* make pdf icon red */
+  filter: grayscale(0%);
+}
+
+.folder-name {
+}
+
+.file-name {
+}
+
+.dir-ent-name {
+  margin: 0 4px;
+}

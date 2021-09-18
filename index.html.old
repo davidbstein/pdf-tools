@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Stein's PDF Reader</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
+  </head>
+  <body>
+    <h1>Hello World</h1>
+    <div>Here is preloaded data -- <span id="preload"></span></div>
+    <div>Here is server data <span id="server"></span></div>
+    <div>
+      Here is a react component:
+      <div id="render-target"></div>
+    </div>
+    <script src="./renderer.js"></script>
+  </body>
+</html>
