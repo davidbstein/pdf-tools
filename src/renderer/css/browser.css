@@ -1,13 +1,3 @@
-:root {
-  --top-header-height: 24px;
-  --top-header-padding: 4px;
-}
-
-#container {
-  width: 100%;
-  height: 100%;
-}
-
 div#folder-broser {
   margin: none;
 }
@@ -43,19 +33,19 @@ div#file-list {
 }
 
 .fiv-sqo {
-  /* make svgs greyscale */
   filter: grayscale(100%);
 }
 .fiv-sqo.fiv-icon-pdf {
-  /* make pdf icon red */
   filter: grayscale(0%);
 }
 
+/* 
 .folder-name {
 }
 
 .file-name {
-}
+} 
+*/
 
 .dir-ent-name {
   margin: 0 4px;

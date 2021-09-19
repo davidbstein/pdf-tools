@@ -1,6 +1,6 @@
 import { Menu } from "electron";
 
-export default (app, { openFile, saveFile, closeFile }) => {
+export default function generateMenu(app, { openFile, saveFile, closeFile }) {
   const TEMPLATE = [
     {
       label: "File",
@@ -110,4 +110,4 @@ export default (app, { openFile, saveFile, closeFile }) => {
     });
   }
   return Menu.buildFromTemplate(TEMPLATE);
-};
+}

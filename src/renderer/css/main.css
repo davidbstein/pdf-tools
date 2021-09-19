@@ -1,0 +1,9 @@
+:root {
+  --top-header-height: 24px;
+  --top-header-padding: 4px;
+}
+
+#container {
+  width: 100%;
+  height: 100%;
+}

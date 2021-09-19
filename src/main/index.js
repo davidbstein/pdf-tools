@@ -1,5 +1,3 @@
-"use strict";
-
 import { app, BrowserWindow, Menu, dialog, ipcMain } from "electron";
 import * as path from "path";
 import { format as formatUrl } from "url";
@@ -7,57 +5,81 @@ import generateMenu from "./menu";
 import os from "os";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
-
-// global reference to mainWindow (necessary to prevent window from being garbage collected)
-let mainWindow;
-let windows = new Set();
 const DEFAULT_DIR = `${os.homedir()}/Dropbox/_Law`;
+const DEFAULT_WEB_PREFERENCES = {
+  nodeIntegration: true,
+  contextIsolation: false,
+  enableRemoteModule: true,
+  nativeWindowOpen: false,
+};
 const currentPaths = {};
 
-function createMainWindow() {
-  const window = new BrowserWindow({
-    title: "Stein PDF",
-    x: 0,
-    y: 0,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-    },
+// global reference to prevent garbage collection
+let windows = {};
+
+function createNewWindow(filePath = DEFAULT_DIR, { x, y, w, h } = { w: 800, h: 800, x: 0, y: 0 }) {
+  const newWindow = new BrowserWindow({
+    x: x,
+    y: y,
+    width: w,
+    height: h,
+    webPreferences: DEFAULT_WEB_PREFERENCES,
   });
 
-  if (isDevelopment) {
-    //window.webContents.openDevTools();
-  }
+  newWindow.on("close", () => {
+    delete windows[newWindow.id];
+    newWindow.unref;
+  });
 
+  windows[newWindow.id] = newWindow;
+  currentPaths[newWindow.id] = filePath;
+  console.log(`NEW WINDOW: ${newWindow.id}`);
+  console.log(`Current Paths (by window ID): ${JSON.stringify(currentPaths, null, 2)}`);
+  return newWindow;
+}
+
+/**
+ * Creates a new windows for viewing a pdf.
+ * @param {string} filePath the starting directory
+ */
+function createFileBrowserWindow(filePath = DEFAULT_DIR) {
+  const newWindow = createNewWindow(filePath);
   if (isDevelopment) {
-    window.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
+    newWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
   } else {
-    window.loadURL(
-      formatUrl({
-        pathname: path.join(__dirname, "index.html"),
-        protocol: "file",
-        slashes: true,
-      })
-    );
+    newWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
   }
+  return newWindow;
+}
 
-  window.on("closed", () => {
-    mainWindow = null;
-  });
+/**
+ * Creates a new windows for viewing a pdf.
+ * @param {string} filePath the path to the pdf file.
+ */
+function openPDFWindow(filePath) {
+  const newPDFWindow = createNewWindow(filePath, { w: 1600, h: 1300 });
+  if (isDevelopment) {
+    newPDFWindow.webContents.openDevTools();
+    newPDFWindow.loadURL(
+      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?filePath=${encodeURIComponent(
+        filePath
+      )}`
+    );
+  } else {
+    newPDFWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
+  }
+  return newPDFWindow;
+}
 
-  window.webContents.on("devtools-opened", () => {
-    window.focus();
-    setImmediate(() => {
-      window.focus();
-    });
-  });
-
+/**
+ * initialize the default menus and bind them.
+ */
+function initializeMenu() {
   Menu.setApplicationMenu(
     generateMenu(app, {
       openFile: (menuItem, browserWindow, event) => {
         console.log("OPEN FILE CLICKED");
-        const fileName = dialog.showOpenDialogSync(mainWindow, {
+        const fileName = dialog.showOpenDialogSync(window, {
           properties: ["openFile"],
         });
         console.log(fileName);
@@ -71,98 +93,64 @@ function createMainWindow() {
       },
     })
   );
-  console.log(`MAIN WINDOW: ${window.id}`);
-  return window;
 }
 
-function openPDFWindow(filePath) {
-  const window = new BrowserWindow({
-    width: 1600,
-    height: 2000,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-    },
-  });
-
-  if (isDevelopment) {
-    window.webContents.openDevTools();
-  }
-
-  if (isDevelopment) {
-    window.loadURL(
-      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?filePath=${encodeURIComponent(
-        filePath
-      )}`
-    );
-  } else {
-    window.loadURL(
-      formatUrl({
-        pathname: path.join(__dirname, "index.html"),
-        protocol: "file",
-        slashes: true,
-      })
-    );
-  }
-
-  window.on("closed", () => {
-    windows.delete(window);
-  });
-
-  windows.add(window);
-  console.log(`NEW WINDOW: ${window.id}`);
-  currentPaths[window.id] = filePath;
-}
-
+/**
+ * app is a global object provided by electron
+ * these are global application management listeners...
+ */
 app.whenReady().then(() => {});
 
 app.on("open-file", (event, path) => {
+  console.log(`APP EVENT -- open-file: ${path}`);
   event.preventDefault();
   console.log(`trying to open ${path}`);
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
   app.quit();
 });
 
 app.on("activate", () => {
-  if (mainWindow === null) {
-    mainWindow = createMainWindow();
+  console.log(`APP EVENT -- activate. widows.size = ${windows.size}`);
+  if (windows.size == 0) {
+    createFileBrowserWindow();
+    initializeMenu();
   }
 });
 
 app.on("ready", () => {
-  mainWindow = createMainWindow();
-  mainWindow.setRepresentedFilename(DEFAULT_DIR);
-  mainWindow.setDocumentEdited(false);
+  console.log(`APP EVENT -- ready`);
+  const bw = createFileBrowserWindow();
+  bw.setRepresentedFilename(DEFAULT_DIR);
+  bw.setDocumentEdited(false);
 });
 
+// HELPER FUNCTIONS //ß
 function getCurrentPathForSender(senderId) {
   return currentPaths[senderId] || DEFAULT_DIR;
 }
 
+/**
+ * ipc listeners manage communication with windows. windows have a unique sender ID that
+ * is different from their window ID.
+ */
 ipcMain.on("getCurrentPath", (event, arg) => {
   const toRet = getCurrentPathForSender(event.sender.id);
-  console.log(`getCurrentPath: ${event.sender.id}  -- ${arg} ===> ${toRet}`);
+  console.log(`IPC -- getCurrentPath: ${event.sender.id}  -- ${arg} ===> ${toRet}`);
   event.returnValue = toRet;
 });
 
 ipcMain.on("navigateTo", (event, target) => {
   currentPaths[event.sender.id] = target;
   const curPath = currentPaths[event.sender.id];
-  mainWindow.setRepresentedFilename(curPath);
-  console.log(`navigateTo: ${event.sender.id}  -- ${target} ===> ${curPath}`);
+  console.log("TODO: window.setRepresentedFilename(curPath)");
+  console.log(`IPC -- navigateTo: ${event.sender.id}  -- ${target} ===> ${curPath}`);
   event.returnValue = curPath;
 });
 
-/**
- * open a new window to view the file
- */
 ipcMain.on("openFile", (event, target) => {
   openPDFWindow(target);
-  console.log(`openFile: ${event.sender.id}  -- ${target} ===> ${3}`);
+  console.log(`IPC -- openFile: ${event.sender.id}  -- ${target} ===> ${3}`);
 });
