@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom";
 import React, { Component } from "react";
 import PropTypes from "prop-types";
-import * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
+import pdfjsLib, * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
 import "pdfjs-dist/web/pdf_viewer.css";
 import "@/css/pdf.css";
 

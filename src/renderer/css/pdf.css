@@ -48,6 +48,30 @@
   padding-top: calc(var(--toolbar-height) + 4px);
   background-color: #444;
   width: 100%;
+  height: calc(100% - var(--toolbar-height) - 4px);
+  position: absolute;
+  overflow: hidden;
+}
+
+.pdfViewer {
+  --gap-size: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: flex-start;
+  gap: var(--gap-size);
+  padding: var(--gap-size);
+  max-width: 100%;
   height: 100%;
-  position: relative;
+  overflow: scroll;
+  background-color: grey;
+}
+
+.pdfViewer .page {
+  margin: 0 0 0 0;
+  padding: 0 0 0 0;
+  border-image: none;
+  border: none;
+  box-shadow: 0 0 6px 0 black;
 }
