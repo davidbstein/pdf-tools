@@ -77,8 +77,8 @@ function createMainWindow() {
 
 function openPDFWindow(filePath) {
   const window = new BrowserWindow({
-    width: 400,
-    height: 400,
+    width: 1600,
+    height: 2000,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

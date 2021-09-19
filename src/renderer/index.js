@@ -7,6 +7,31 @@ import "./main.css";
 import "file-icon-vectors/dist/file-icon-square-o.css";
 import _ from "lodash";
 import { ipcRenderer } from "electron";
+import PdfViewer from "./pdfViewer.js";
+// import pdfJsLib from "pdfjs-dist";
+// pdfJsLib.GlobalWorkerOptions.workerSrc = "pdf.worker.js";
+
+// const loadingTask = pdfjsLib.getDocument(pdfPath);
+// loadingTask.promise
+// .then(function (pdfDocument) {
+//   // Request a first page
+//   return pdfDocument.getPage(1).then(function (pdfPage) {
+//     // Display page on the existing canvas with 100% scale.
+//     const viewport = pdfPage.getViewport({ scale: 1.0 });
+//     const canvas = document.getElementById("theCanvas");
+//     canvas.width = viewport.width;
+//     canvas.height = viewport.height;
+//     const ctx = canvas.getContext("2d");
+//     const renderTask = pdfPage.render({
+//       canvasContext: ctx,
+//       viewport,
+//     });
+//     return renderTask.promise;
+//   });
+// })
+// .catch(function (reason) {
+//   console.error("Error: " + reason);
+// });
 
 function getUrlParams() {
   const params = {};
@@ -120,7 +145,7 @@ function BrowserApp() {
 function App() {
   const filePath = getUrlParams().filePath;
   console.log(`loading ${filePath}`);
-  return <div id="container">{filePath ? <PdfApp filePath={filePath} /> : <BrowserApp />}</div>;
+  return <div id="container">{filePath ? <PdfViewer url={filePath} /> : <BrowserApp />}</div>;
 }
 
 ReactDOM.render(<App />, document.getElementById("app"));

@@ -3,6 +3,11 @@
   --top-header-padding: 4px;
 }
 
+#container {
+  width: 100%;
+  height: 100%;
+}
+
 div#folder-broser {
   margin: none;
 }
