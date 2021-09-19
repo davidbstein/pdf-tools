@@ -45,7 +45,9 @@ function createNewWindow(filePath = DEFAULT_DIR, { x, y, w, h } = { w: 800, h: 8
 function createFileBrowserWindow(filePath = DEFAULT_DIR) {
   const newWindow = createNewWindow(filePath);
   if (isDevelopment) {
-    newWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
+    newWindow.loadURL(
+      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?windowId=${newWindow.id}`
+    );
   } else {
     newWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
   }
@@ -57,18 +59,18 @@ function createFileBrowserWindow(filePath = DEFAULT_DIR) {
  * @param {string} filePath the path to the pdf file.
  */
 function openPDFWindow(filePath) {
-  const newPDFWindow = createNewWindow(filePath, { w: 1600, h: 1300 });
+  const newWindow = createNewWindow(filePath, { w: 1600, h: 1300 });
   if (isDevelopment) {
-    newPDFWindow.webContents.openDevTools();
-    newPDFWindow.loadURL(
+    newWindow.webContents.openDevTools();
+    newWindow.loadURL(
       `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?filePath=${encodeURIComponent(
         filePath
-      )}`
+      )}&windowId=${newWindow.id}`
     );
   } else {
-    newPDFWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
+    newWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
   }
-  return newPDFWindow;
+  return newWindow;
 }
 
 /**
@@ -136,21 +138,21 @@ function getCurrentPathForSender(senderId) {
  * ipc listeners manage communication with windows. windows have a unique sender ID that
  * is different from their window ID.
  */
-ipcMain.on("getCurrentPath", (event, arg) => {
-  const toRet = getCurrentPathForSender(event.sender.id);
-  console.log(`IPC -- getCurrentPath: ${event.sender.id}  -- ${arg} ===> ${toRet}`);
+ipcMain.on("getCurrentPath", (event, { _id }) => {
+  const toRet = getCurrentPathForSender(_id);
+  console.log(`IPC -- getCurrentPath: ${_id} ===> ${toRet}`);
   event.returnValue = toRet;
 });
 
-ipcMain.on("navigateTo", (event, target) => {
-  currentPaths[event.sender.id] = target;
-  const curPath = currentPaths[event.sender.id];
+ipcMain.on("navigateTo", (event, { target, _id }) => {
+  currentPaths[_id] = target;
+  const curPath = currentPaths[_id];
   console.log("TODO: window.setRepresentedFilename(curPath)");
-  console.log(`IPC -- navigateTo: ${event.sender.id}  -- ${target} ===> ${curPath}`);
+  console.log(`IPC -- navigateTo: ${_id}  -- ${target} ===> ${curPath}`);
   event.returnValue = curPath;
 });
 
-ipcMain.on("openFile", (event, target) => {
+ipcMain.on("openFile", (event, { target, _id }) => {
   openPDFWindow(target);
-  console.log(`IPC -- openFile: ${event.sender.id}  -- ${target} ===> ${3}`);
+  console.log(`IPC -- openFile: ${_id}  -- ${target} ===> ${3}`);
 });

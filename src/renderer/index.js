@@ -26,3 +26,4 @@ function App() {
 ReactDOM.render(<App />, document.getElementById("app"));
 
 document.title = getCurrentPath();
+window._WINDOW_ID = getUrlParams().windowId;

@@ -1,7 +1,15 @@
 import { ipcRenderer } from "electron";
 
+function sendSync(functionName, message = {}) {
+  return ipcRenderer.sendSync(functionName, { _id: window._WINDOW_ID, ...message });
+}
+
+function send(functionName, message) {
+  return ipcRenderer.send(functionName, { _id: window._WINDOW_ID, ...message });
+}
+
 export function getCurrentPath() {
-  return ipcRenderer.sendSync("getCurrentPath");
+  return sendSync("getCurrentPath");
 }
 
 export function listCurrentDir(hidden = false) {
@@ -10,7 +18,7 @@ export function listCurrentDir(hidden = false) {
 
 export function handleFolderSelect(setCurrentPath, target) {
   console.log("navigate", target);
-  ipcRenderer.sendSync("navigateTo", target);
+  sendSync("navigateTo", { target });
   const curPath = getCurrentPath();
   document.title = curPath;
   setCurrentPath(curPath);
@@ -18,5 +26,5 @@ export function handleFolderSelect(setCurrentPath, target) {
 
 export function handleFileSelect(target) {
   console.log("opening", target);
-  ipcRenderer.send("openFile", target);
+  send("openFile", { target });
 }
