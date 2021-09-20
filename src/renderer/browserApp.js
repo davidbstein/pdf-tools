@@ -12,12 +12,14 @@ export default function BrowserApp() {
       <div id="current-path">
         {currentPath.split("/").map((cur, idx, arr) => {
           const p = arr.slice(0, idx + 1).join("/");
-          return [
-            <span className="clickable" onClick={() => handleFolderSelect(setCurrentPath, p)}>
-              {cur}
-            </span>,
-            <span>/ </span>,
-          ];
+          return (
+            <span key={idx}>
+              <span className="clickable" onClick={() => handleFolderSelect(setCurrentPath, p)}>
+                {cur}
+              </span>
+              ,<span>/ </span>,
+            </span>
+          );
         })}
       </div>
       <div id="file-list">

@@ -1,25 +1,26 @@
 import ReactDOM from "react-dom";
 import React, { Component } from "react";
-import PropTypes from "prop-types";
-import pdfjsLib, * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
+import SteinPDFViewer from "./SteinPDFViewer";
+
 import "pdfjs-dist/web/pdf_viewer.css";
 import "@/css/pdf.css";
 
 export default class Viewer extends Component {
   constructor(props) {
     super(props);
-    this.initEventBus();
     this.state = {
-      doc: null,
       scale: undefined,
     };
   }
-  initEventBus() {
-    let eventBus = new PDFJSViewer.EventBus();
-    eventBus.on("pagesinit", (e) => {
-      this.setState({
-        scale: this._pdfViewer.currentScale,
-      });
+  componentDidMount() {
+    this._pdfViewer = new SteinPDFViewer(this.props.url, ReactDOM.findDOMNode(this));
+    window._pdf = this._pdfViewer;
+    this._eventBus = this._pdfViewer._eventBus;
+    this._eventBus.on("pagerendered", (e) => {
+      console.log("rendered", e);
+    });
+    this._eventBus.on("pagesinit", (e) => {
+      this.setState({ scale: this._pdfViewer.currentScale });
       if (this.props.onInit) {
         this.props.onInit({});
       }
@@ -27,44 +28,17 @@ export default class Viewer extends Component {
         this.props.onScaleChanged({ scale: this.state.scale });
       }
     });
-    eventBus.on("scalechange", (e) => {
+    this._eventBus.on("scalechange", (e) => {
       if (this.props.onScaleChanged) {
         this.props.onScaleChanged({ scale: e.scale });
       }
     });
-    this._eventBus = eventBus;
-  }
-  componentDidMount() {
-    let viewerContainer = ReactDOM.findDOMNode(this);
-    this._pdfViewer = new PDFJSViewer.PDFViewer({
-      container: viewerContainer,
-      eventBus: this._eventBus,
-    });
-  }
-  UNSAFE_componentWillUpdate(nextProps, nextState) {
-    if (this.state.doc !== nextState.doc) {
-      this._pdfViewer.setDocument(nextState.doc);
-    }
-    if (this.state.scale !== nextState.scale) {
-      this._pdfViewer.currentScale = nextState.scale;
-    }
-  }
-  shouldComponentUpdate(nextProps, nextState) {
-    if (this.state.doc !== nextState.doc || this.state.scale !== nextState.scale) {
-      return true;
-    }
-    return false;
   }
   render() {
     return (
-      <div className="Viewer">
-        <div className="pdfViewer"></div>
+      <div id="Viewer">
+        <div id="pdfViewer"></div>
       </div>
     );
   }
 }
-
-Viewer.propTypes = {
-  onInit: PropTypes.func,
-  onScaleChanged: PropTypes.func,
-};
