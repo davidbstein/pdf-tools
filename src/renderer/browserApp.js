@@ -17,7 +17,7 @@ export default function BrowserApp() {
               <span className="clickable" onClick={() => handleFolderSelect(setCurrentPath, p)}>
                 {cur}
               </span>
-              ,<span>/ </span>,
+              <span>/ </span>
             </span>
           );
         })}

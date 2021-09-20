@@ -5,6 +5,11 @@
   --toolbar-bg-color: #444;
   --toolbar-fg-color: #eee;
 }
+:root {
+  --toolbar-height: 0px;
+  --sidebar-width: 0px;
+  --statusbar-height: 0px;
+}
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -84,4 +89,8 @@
   box-shadow: 0 0 6px 0 black;
   display: block;
   position: relative;
+}
+
+#pdfViewer section.highlightAnnotation {
+  pointer-events: none;
 }

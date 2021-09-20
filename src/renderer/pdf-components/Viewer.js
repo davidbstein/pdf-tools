@@ -16,9 +16,6 @@ export default class Viewer extends Component {
     this._pdfViewer = new SteinPDFViewer(this.props.url, ReactDOM.findDOMNode(this));
     window._pdf = this._pdfViewer;
     this._eventBus = this._pdfViewer._eventBus;
-    this._eventBus.on("pagerendered", (e) => {
-      console.log("rendered", e);
-    });
     this._eventBus.on("pagesinit", (e) => {
       this.setState({ scale: this._pdfViewer.currentScale });
       if (this.props.onInit) {

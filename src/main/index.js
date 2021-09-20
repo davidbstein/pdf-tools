@@ -1,10 +1,12 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain } from "electron";
 import * as path from "path";
 import { format as formatUrl } from "url";
+import { fromFile as fileTypeFromFile } from "file-type";
 import generateMenu from "./menu";
+import fs from "fs";
 import os from "os";
 
-const isDevelopment = process.env.NODE_ENV !== "production";
+const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
 const DEFAULT_DIR = `${os.homedir()}/Dropbox/_Law`;
 const DEFAULT_WEB_PREFERENCES = {
   nodeIntegration: true,
@@ -12,70 +14,58 @@ const DEFAULT_WEB_PREFERENCES = {
   enableRemoteModule: true,
   nativeWindowOpen: false,
 };
-const currentPaths = {};
+const _CurrentPaths = {};
+let _win_refs_ = {}; // global reference to prevent garbage collection
 
-// global reference to prevent garbage collection
-let windows = {};
+function fileType(filePath) {
+  if (fs.lstatSync(filePath).isDirectory()) return "directory";
+  return fileTypeFromFile(filePath);
+}
 
-function createNewWindow(filePath = DEFAULT_DIR, { x, y, w, h } = { w: 800, h: 800, x: 0, y: 0 }) {
-  const newWindow = new BrowserWindow({
-    x: x,
-    y: y,
-    width: w,
-    height: h,
-    webPreferences: DEFAULT_WEB_PREFERENCES,
-  });
+function createNewWindow(
+  filePath = DEFAULT_DIR,
+  { x, y, w: width, h: height } = { w: 800, h: 800, x: 0, y: 0 },
+  webPreferences = DEFAULT_WEB_PREFERENCES
+) {
+  const newWindow = new BrowserWindow({ x, y, width, height, webPreferences });
 
   newWindow.on("close", () => {
-    delete windows[newWindow.id];
-    newWindow.unref;
+    delete _win_refs_[newWindow.id];
   });
 
-  windows[newWindow.id] = newWindow;
-  currentPaths[newWindow.id] = filePath;
-  console.log(`NEW WINDOW: ${newWindow.id}`);
-  console.log(`Current Paths (by window ID): ${JSON.stringify(currentPaths, null, 2)}`);
+  let hostLocation = IS_DEVELOPMENT
+    ? { pathname: `localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`, protocol: "http" }
+    : { pathname: path.join(__dirname, "index.html"), protocol: "file" };
+  let url = formatUrl({
+    ...hostLocation,
+    slashes: true,
+    query: {
+      filePath,
+      windowId: newWindow.id,
+      fileType: fileType(filePath),
+    },
+  });
+  newWindow.loadURL(url);
+
+  _win_refs_[newWindow.id] = newWindow;
+  setCurrentPath([newWindow.id], filePath);
+  console.log(`NEW WINDOW: ${newWindow.id} -- ${url}`);
+  console.log(`Current Paths (by window ID): ${JSON.stringify(_CurrentPaths, null, 2)}`);
   return newWindow;
 }
 
-/**
- * Creates a new windows for viewing a pdf.
- * @param {string} filePath the starting directory
- */
 function createFileBrowserWindow(filePath = DEFAULT_DIR) {
   const newWindow = createNewWindow(filePath);
-  if (isDevelopment) {
-    newWindow.loadURL(
-      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?windowId=${newWindow.id}`
-    );
-  } else {
-    newWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
-  }
+  if (IS_DEVELOPMENT) newWindow.webContents.openDevTools();
   return newWindow;
 }
 
-/**
- * Creates a new windows for viewing a pdf.
- * @param {string} filePath the path to the pdf file.
- */
 function openPDFWindow(filePath) {
   const newWindow = createNewWindow(filePath, { w: 1600, h: 1300 });
-  if (isDevelopment) {
-    newWindow.webContents.openDevTools();
-    newWindow.loadURL(
-      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}?filePath=${encodeURIComponent(
-        filePath
-      )}&windowId=${newWindow.id}`
-    );
-  } else {
-    newWindow.loadURL(path.join(__dirname, "index.html")); // might need generatic path creator for windows
-  }
+  if (IS_DEVELOPMENT) newWindow.webContents.openDevTools();
   return newWindow;
 }
 
-/**
- * initialize the default menus and bind them.
- */
 function initializeMenu() {
   Menu.setApplicationMenu(
     generateMenu(app, {
@@ -98,7 +88,7 @@ function initializeMenu() {
 }
 
 /**
- * app is a global object provided by electron
+ * app is a global object is provided by electron
  * these are global application management listeners...
  */
 app.whenReady().then(() => {});
@@ -115,8 +105,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  console.log(`APP EVENT -- activate. widows.size = ${windows.size}`);
-  if (windows.size == 0) {
+  console.log(`APP EVENT -- activate. widows.size = ${_win_refs_.size}`);
+  if (_win_refs_.size == 0) {
     createFileBrowserWindow();
     initializeMenu();
   }
@@ -129,9 +119,13 @@ app.on("ready", () => {
   bw.setDocumentEdited(false);
 });
 
-// HELPER FUNCTIONS //ß
-function getCurrentPathForSender(senderId) {
-  return currentPaths[senderId] || DEFAULT_DIR;
+// HELPER FUNCTIONS //
+function getCurrentPath(windowId) {
+  return _CurrentPaths[windowId] || DEFAULT_DIR;
+}
+
+function setCurrentPath(windowId, path) {
+  return (_CurrentPaths[windowId] = path);
 }
 
 /**
@@ -139,14 +133,14 @@ function getCurrentPathForSender(senderId) {
  * is different from their window ID.
  */
 ipcMain.on("getCurrentPath", (event, { _id }) => {
-  const toRet = getCurrentPathForSender(_id);
+  const toRet = getCurrentPath(_id);
   console.log(`IPC -- getCurrentPath: ${_id} ===> ${toRet}`);
   event.returnValue = toRet;
 });
 
 ipcMain.on("navigateTo", (event, { target, _id }) => {
-  currentPaths[_id] = target;
-  const curPath = currentPaths[_id];
+  setCurrentPath(_id, target);
+  const curPath = getCurrentPath(_id);
   console.log("TODO: window.setRepresentedFilename(curPath)");
   console.log(`IPC -- navigateTo: ${_id}  -- ${target} ===> ${curPath}`);
   event.returnValue = curPath;

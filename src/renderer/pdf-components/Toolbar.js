@@ -5,6 +5,6 @@ export default class Toolbar extends Component {
     super(props);
   }
   render() {
-    return <div id="Toolbar">TOOL TIME!</div>;
+    return <div id="Toolbar"></div>;
   }
 }
