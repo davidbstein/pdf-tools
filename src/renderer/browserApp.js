@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useReducer } from "react";
 import { getCurrentPath, handleFileSelect, handleFolderSelect } from "@/actions";
-import { listDir } from "@/fileHelpers";
+import { listDir, watchOrReload } from "@/fileHelpers";
 import "file-icon-vectors/dist/file-icon-square-o.css";
 import "@/css/browser.css";
 
 export default function BrowserApp() {
   const [currentPath, setCurrentPath] = useState(getCurrentPath());
   const [showHidden, setShowHidden] = useState(false);
+  const [_, forceUpdate] = useReducer((x) => x + 1, 0);
+  watchOrReload(currentPath, forceUpdate);
   return (
     <div id="folder-broser">
       <div id="current-path">
