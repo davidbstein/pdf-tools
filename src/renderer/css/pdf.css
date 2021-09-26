@@ -1,14 +1,6 @@
 :root {
-  --toolbar-height: 44px;
-  --sidebar-width: 300px;
-  --statusbar-height: 20px;
   --toolbar-bg-color: #444;
   --toolbar-fg-color: #eee;
-}
-:root {
-  --toolbar-height: 0px;
-  --sidebar-width: 0px;
-  --statusbar-height: 0px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -67,6 +59,21 @@
   max-width: 100%;
   overflow-y: scroll;
   overflow-x: hidden;
+}
+
+#Annotationbar {
+  position: fixed;
+  right: 0;
+  bottom: var(--statusbar-height);
+  top: var(--toolbar-height);
+  max-width: var(--annotationbar-width);
+  overflow: hidden;
+  background-color: #444;
+  color: #eee;
+  font-size: 12px;
+  line-height: 24px;
+  padding: 0 8px;
+  z-index: 1;
 }
 
 #pdfViewer {

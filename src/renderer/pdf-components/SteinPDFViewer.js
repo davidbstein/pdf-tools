@@ -24,8 +24,18 @@ export default class SteinPDFViewer {
       (error) => console.error(`Could not load ${this.props.url} ERROR: ${error}`)
     );
 
-    this._eventBus.on("pagerendered", (e) => {
-      console.log("rendered", e);
+    // this._eventBus.on("pagerendered", (e) => {
+    //   console.log("rendered", e);
+    // });
+  }
+
+  getOutline(callback) {
+    this._doc.getOutline().then(callback);
+  }
+
+  goToDestinationPage(destination) {
+    this._doc.getPageIndex(destination).then((pageIndex) => {
+      this._pdfViewer.currentPageNumber = pageIndex + 1;
     });
   }
 }
