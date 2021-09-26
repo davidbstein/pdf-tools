@@ -7,7 +7,6 @@ import HighlightManager from "@/pdf-components/annotationTools";
 export default class SteinPDFViewer {
   constructor(fileLocation, container) {
     // DOCUMENT LOADER
-    console.log(container);
     this._container = container;
     this._eventBus = new PDFJSViewer.EventBus();
     this._pdfViewer = new PDFJSViewer.PDFViewer({
@@ -59,8 +58,10 @@ export default class SteinPDFViewer {
   }
 
   saveFileAndAnnotations() {
+    const saveLoc = `${this._fileLocation}.highlightest.pdf`;
+    console.log(`[SteinPdfViewer] SAVING - ${saveLoc}`);
     const f = this._highlightManager.getRawPDFWithAnnotations();
-    fs.writeFileSync(`${this._fileLocation}.highlightest.pdf`, f);
+    fs.writeFileSync(saveLoc, f);
   }
 
   _saveListener(e) {

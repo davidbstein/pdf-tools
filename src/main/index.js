@@ -7,7 +7,7 @@ import fs from "fs";
 import os from "os";
 
 const IS_DEVELOPMENT = process.env.NODE_ENV !== "production";
-const DEFAULT_DIR = `${os.homedir()}/Dropbox/_Law`;
+const DEFAULT_DIR = `${os.homedir()}/Dropbox/_Law/TEST`;
 const DEFAULT_WEB_PREFERENCES = {
   nodeIntegration: true,
   contextIsolation: false,
@@ -22,7 +22,7 @@ function fileType(filePath) {
   return fileTypeFromFile(filePath);
 }
 
-function createNewWindow(
+function _createNewWindow(
   filePath = DEFAULT_DIR,
   { x, y, w: width, h: height } = { w: 800, h: 800, x: 0, y: 0 },
   webPreferences = DEFAULT_WEB_PREFERENCES
@@ -55,13 +55,13 @@ function createNewWindow(
 }
 
 function createFileBrowserWindow(filePath = DEFAULT_DIR) {
-  const newWindow = createNewWindow(filePath);
+  const newWindow = _createNewWindow(filePath);
   if (IS_DEVELOPMENT) newWindow.webContents.openDevTools();
   return newWindow;
 }
 
 function openPDFWindow(filePath) {
-  const newWindow = createNewWindow(filePath, { w: 1600, h: 1300 });
+  const newWindow = _createNewWindow(filePath, { w: 1600, h: 1300 });
   if (IS_DEVELOPMENT) newWindow.webContents.openDevTools();
   return newWindow;
 }

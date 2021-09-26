@@ -106,6 +106,19 @@
   content: "";
 }
 
+#pdfViewer .page .textLayer {
+  opacity: 1;
+}
+
+#pdfViewer .page .textLayer::selection,
+#pdfViewer .page .textLayer span::selection {
+  background: var(--highlight-color);
+  background-color: var(--highlight-color);
+  text-decoration: var(--highlight-text-decoration);
+  border: 1px solid black;
+  opacity: var(--highlight-opacity);
+}
+
 #pdfViewer section.highlightAnnotation {
   pointer-events: none;
 }

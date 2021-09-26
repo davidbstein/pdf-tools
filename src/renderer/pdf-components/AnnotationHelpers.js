@@ -2,6 +2,54 @@ import _ from "lodash";
 import fs from "fs";
 
 /**
+ * given a color of one of the following formats: {r: [0-255], g: [0-255], b: [0-255]};  {r: [0-1], g: [0-1], b: [0-1]}; #RRGGBB; or #RGB
+ * returns a color {r: [0-255], g: [0-255], b: [0-255]}.
+ */
+export function colorToRGB(colorObject) {
+  if (typeof colorObject === "string") {
+    if (colorObject.startsWith("#")) {
+      colorObject = colorObject.substring(1);
+    }
+    if (colorObject.length == 3) {
+      colorObject = colorObject
+        .split("")
+        .map((c) => `${c}${c}`)
+        .join("");
+    }
+    const color = parseInt(colorObject, 16);
+    return {
+      r: (color >> 16) & 255,
+      g: (color >> 8) & 255,
+      b: color & 255,
+    };
+  }
+  if (typeof colorObject === "object") {
+    if (_.max(_.values(colorObject)) > 1) {
+      return { ...colorObject };
+    } else {
+      return _.fromPairs(_.toPairs(colorObject).map(([k, v]) => [k, Math.round(v * 255)]));
+    }
+  }
+  console.error(
+    "colorToRGB: invalid color object",
+    colorObject,
+    typeof colorObject,
+    "expected string or object"
+  );
+}
+
+export function colorToHex(color, opacity) {
+  const rgb = colorToRGB(color);
+  const hexColor = "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
+  if (opacity) {
+    let opacityHex = Math.round(256 + 255 * opacity)
+      .toString(16)
+      .slice(1);
+    return `${hexColor}${opacityHex}`;
+  }
+  return hexColor;
+}
+/**
  * given a javascript selection, return a list of text nodes in the selection
  * @param {Selection} selection
  */
@@ -75,18 +123,20 @@ export function renderAnnotationDivs({
   color,
   id,
   object_id,
-  page: pageNum,
+  page: pageIdx,
   opacity,
   quadPoints,
 }) {
+  const pageNum = pageIdx + 1;
   const pageDiv = getPageDiv(pageNum);
   const pageRect = pageDiv.getBoundingClientRect();
   const rects = quadPointArrayToRects(quadPoints, pageRect);
+  color = colorToRGB(color);
   return rects.map((rect, idx) => {
     const div = document.createElement("div");
     div.classList.add("unsaved-annotation");
     div.id = `${id}-${idx}`;
-    div.style.background = `rgba(${255 * color.r}, ${255 * color.g}, ${255 * color.b}, ${opacity})`;
+    div.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`;
     div.style.left = `${rect.left}px`;
     div.style.top = `${rect.top}px`;
     div.style.bottom = `${rect.bottom}px`;
@@ -116,7 +166,6 @@ export function nodeToQuadpoint(node, pageDiv, scale = 1) {
   const width = nodeRect.width;
   const height = nodeRect.height;
   const quadPoint = [x, y, x + width, y, x, y + height, x + width, y + height];
-  console.log({ nodeRect, pageRect, x, y, width, height, quadPoint });
   const scaledQuadPoint = quadPoint.map((point) => point / scale);
   return scaledQuadPoint;
 }
