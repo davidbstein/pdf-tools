@@ -45,8 +45,10 @@ export default class PdfViewer extends Component {
     this.setState({ annotationbar_width: newWidth });
   }
   readyForPDF(target) {
+    if (window._pdf) {
+      this._pdfViewer = window._pdf;
+    }
     this._pdfViewer = new SteinPDFViewer(this.props.url, target);
-    window._pdf = this._pdfViewer;
     this._eventBus = this._pdfViewer._eventBus;
     this._eventBus.on("pagesinit", (e) => {
       this.setState({ scale: this._pdfViewer.currentScale });

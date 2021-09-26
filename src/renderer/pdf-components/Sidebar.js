@@ -11,12 +11,13 @@ import "@/css/pdf-sidebar.css";
  * @param {object{Array{@pdfjs-dist/types/src/display/api.d.ts#OutlineNode}}} outline
  */
 function Outline({ outline, currentPath = [] }) {
-  console.log(outline);
   return (
     <div>
-      {outline.map((node, index) => (
-        <OutlineNode key={index} node={node} currentPath={currentPath} level={0} />
-      ))}
+      {outline
+        ? outline.map((node, index) => (
+            <OutlineNode key={index} node={node} currentPath={currentPath} level={0} />
+          ))
+        : []}
     </div>
   );
 }
@@ -24,10 +25,22 @@ function Outline({ outline, currentPath = [] }) {
 class OutlineNode extends Component {
   constructor(props) {
     super(props);
-    const isCurrent = _.isEqual(props.currentPath, [props.level]);
+    const {
+      currentPath,
+      level,
+      node: {
+        dest: [destination],
+      },
+    } = this.props;
+    const isCurrent = _.isEqual(currentPath, [level]);
     this.state = {
-      expanded: props.level == 0 || isCurrent,
+      expanded: level == 0 || isCurrent,
+      pageIndex: null,
     };
+    window._pdf.lookupDestinationPage(
+      destination,
+      ((pageIndex) => this.setState({ pageIndex })).bind(this)
+    );
     this.goToNode = this.goToNode.bind(this);
   }
 
@@ -43,6 +56,11 @@ class OutlineNode extends Component {
         <div className="outline-node-title-indent" />
         <div className="outline-node-title" onClick={this.goToNode}>
           {node.title}
+          {this.state.pageIndex ? (
+            <div className="outline-node-page-number">p. {this.state.pageIndex}</div>
+          ) : (
+            <div />
+          )}
         </div>
         <div className="outline-subnodes">
           {" "}

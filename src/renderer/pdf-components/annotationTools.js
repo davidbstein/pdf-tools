@@ -1,108 +1,123 @@
 import _ from "lodash";
 import { AnnotationFactory } from "annotpdf";
-
-/**
- * Other annotpdf options (copied from annotpdf documentation)
- * {
- *          updateDate: Date // Specify an update date for the annotation
- *          annotationFlags: { // Specify the behavior of annotations
- *                  invisible: boolean // Do not display annotation
- *                  hidden: boolean // Do not display or print annotation
- *                  print: boolean // Do not print annotation
- *                  noZoom: boolean // Do not scale annotation, when zooming
- *                  noRotate: boolean // Do not rotate annotation, when page is rotated
- *                  noView: boolean // Disable interaction and display of the annotation
- *                  readOnly: boolean
- *                  locked?: boolean
- *                  toggleNoView: boolean // inverts noView option
- *                  lockedContents: boolean // Lock content of the annotation
- *          }
- *          border: { // Specify the appearance of the border; Note that not every option is available on every annotation
- *                  horizontal_corner_radius: number
- *                  vertical_corner_radius: number
- *                  border_width: number
- *                  dash_pattern: number[] // See specification for more information
- *                  border_style: BorderStyles.Solid | BorderStyles.Dashed | BorderStyles.Beveled | BorderStyles.Inset | BorderStyles.Underline // define a border style
- *                  cloudy: boolean // Smear the border
- *                  cloud_intensity: number // Intensity of the smearing
- *          }
- *          color: {r : number, g : number, b : number} // Specify the color can be the background color, the title bar color, the border color, depending on the annotation type
- *  }
- *  Markup annotations are: Text, FreeText, Line, Square, Circle, Polygon, PolyLine, Highlight, Underline, Squiggly, StrikeOut, Stamp, Caret, Ink, FileAttachment, Sound, Redact
- *  {
- *              opacity: number // A number in the interval [0, 1] to control the opacity
- *              richtextString: string // Is displayed in the pop up window, when the annotation is opened
- *              creationDate: Date // Specify a creation date
- *              subject: string // A short description of the subject that is referred in the annotation
- *              intent: string // The intent of the annotation
- *  }
- */
-
-/**
- * given a javascript selection, return a list of nodes in the selection
- * @param {Selection} selection
- */
-function selectionToNotes(selection) {
-  const nodes = [];
-  selection.getRangeAt(0).childNodes.forEach((node) => {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      nodes.push(node);
-    }
-  });
-  return nodes;
-}
-
-/**
- * first the first ancestor with a given class
- */
-function getAncestorWithClass(node, className) {
-  let ancestor = node;
-  while (ancestor.parentNode) {
-    if (ancestor.classList.contains(className)) return ancestor;
-    ancestor = ancestor.parentNode;
-  }
-  return null;
-}
-
-/**
- * given a node, a pdf "quadPoint" array, which gives the x,y coordinates of each corner of the rectangle,
- * left to right, bottom to top. x and y are measured from the bottom right hand corner of the page.
- *
- * Adjusted for scale.
- * @param {Node} node
- * @returns {Object} [bottomLeftX, bottomLeftY, bottomRightX, bottomRightY, topLeftX, topLeftY, topRightX, topRightY]
- */
-function nodeToQuadpoint(node, scale) {
-  const rect = node.getBoundingClientRect();
-  const page = getAncestorWithClass(node, "page");
-  const pageRect = page.getBoundingClientRect();
-  const x = rect.left - pageRect.left;
-  const y = rect.bottom - pageRect.bottom;
-  const width = rect.width;
-  const height = rect.height;
-  const quadPoint = [x, y, x + width, y, x, y + height, x + width, y + height];
-  const scaledQuadPoint = quadPoint.map((point) => point / scale);
-  return scaledQuadPoint;
-}
-
-function selectionToHighlight(selection) {}
+import {
+  selectionToNodes,
+  getAncestorWithClass,
+  getTextNodeBoundingRect,
+  nodeToQuadpoint,
+  renderAnnotationDivs,
+  currentSelection,
+} from "@/pdf-components/AnnotationHelpers";
+import { DOMSVGFactory } from "pdfjs-dist";
 
 export default class HighlightManager {
   constructor(pdfViewer, data) {
     this._pdf = pdfViewer;
+    this._pendingSelectionChange = false;
+    this.highlightDivs = {};
+    this.annotationMap = {};
+    this.undoQueue = [];
+
+    //bind
+    this.highlightCurrentSelection = _.debounce(this.highlightCurrentSelection.bind(this), 100, {
+      trailing: true,
+    });
+    this._undoListener.bind(this);
+    this.draw = this.draw.bind(this);
+    this._undoListener = this._undoListener.bind(this);
+    window.HighlightManager = this;
+
+    // load
     this._pdf._doc.getData().then((data) => {
       this._annotationFactory = new AnnotationFactory(data);
+      window._annotationFactory = this._annotationFactory;
+      document.addEventListener("mouseup", (e) => {
+        this._pendingSelectionChange ? this.highlightCurrentSelection() : null;
+      });
+      document.addEventListener("selectionchange", () => (this._pendingSelectionChange = true));
+      document.addEventListener("keypress", this._undoListener);
+      this._pdf.listenToPageRender(this._pageRenderListener.bind(this));
     });
-    document.addEventListener(
-      "selectionchange",
-      _.debounce(
-        (e) => {
-          console.log("selection - ", window.getSelection());
-        },
-        1000,
-        { trailing: true }
-      )
+  }
+
+  draw() {
+    const annotations = this._annotationFactory.annotations;
+    for (let a of annotations) {
+      if (this.annotationMap[a.id] == null) {
+        this.annotationMap[a.id] = a;
+        this.undoQueue.push(a);
+      }
+      const annotationId = a.id;
+      if (a.is_deleted) {
+        if (this.highlightDivs[annotationId]) {
+          this.highlightDivs[annotationId].map((div) => div.remove());
+          delete this.highlightDivs[annotationId];
+        }
+      } else {
+        if (this.highlightDivs[annotationId]) {
+          // nothing to do. Maybe cleanup when not rendered....
+        } else {
+          this.highlightDivs[annotationId] = renderAnnotationDivs(a);
+          console.log("drawing", a, this.highlightDivs[annotationId]);
+        }
+      }
+    }
+  }
+
+  _undoListener(e) {
+    if (e.key == "z" && e.ctrlKey) {
+      if (this.undoQueue.length === 0) return;
+      const annotation = this.undoQueue.pop();
+      annotation.is_deleted = true;
+      this.draw();
+    }
+  }
+
+  getAnnotationsForPage(pageIdx) {
+    return this._annotationFactory?.annotations?.filter(
+      (annotation) => annotation.page === pageIdx
     );
+  }
+
+  getAnnotations() {
+    return this._annotationFactory?.getAnnotations();
+  }
+
+  getRawPDFWithAnnotations() {
+    return this._annotationFactory?.write();
+  }
+
+  download() {
+    return this._annotationFactory.download();
+  }
+
+  _pageRenderListener({
+    pageNumber,
+    source: { annotationLayer, annotationLayerFactory, div: pageDiv, onBeforeDraw, onAfterDraw },
+  }) {
+    console.log("page-render-annotation-listener");
+    onBeforeDraw(() => console.log("listener - before draw"));
+    onAfterDraw(() => console.log("listener - after draw"));
+  }
+
+  highlightCurrentSelection(selectionChangeEvent) {
+    console.log(selectionChangeEvent);
+    // only run if there is some selection
+    const _selection = currentSelection();
+    if (_selection == null) return;
+    const { pageDiv, pageNumber, quadPoints, text } = _selection;
+    const highlight = this.highlight(
+      pageNumber,
+      [],
+      "test string",
+      "Stein",
+      { r: 0.9, g: 0.2, b: 0.1 },
+      0.25,
+      quadPoints
+    );
+    console.log(this._annotationFactory.annotations);
+    this.draw();
+    return highlight;
   }
 
   /**
@@ -117,12 +132,12 @@ export default class HighlightManager {
    * quadPoints are [bottomleftx, bottomlefty, bottomrightx, bottomrighty, topleftx, toplefty, toprightx, toprighty]
    */
   highlight(page, rect, contents, author, { r, g, b }, opacity, quadPoints) {
-    this._annotationFactory.createHighlightAnnotation({
+    return this._annotationFactory.createHighlightAnnotation({
       page,
       rect,
       contents,
       author,
-      color: { r, g, b, a },
+      color: { r, g, b },
       opacity,
       quadPoints,
     });
@@ -132,7 +147,7 @@ export default class HighlightManager {
    * see `highlight` for input format
    */
   underline(page, [x1, y1, x2, y2], contents, author, { r, g, b }, opacity, quadPoints) {
-    this._annotationFactory.createUnderlineAnnotation({
+    return this._annotationFactory.createUnderlineAnnotation({
       page,
       rect: [x1, y1, x2, y2],
       contents,
@@ -147,7 +162,7 @@ export default class HighlightManager {
    * see `highlight` for input format. quadPoints unavailable
    */
   rectangle(page, [x1, y1, x2, y2], contents, author, outline_rgb, fill_rgb) {
-    this._annotationFactory.createSquareAnnotation({
+    return this._annotationFactory.createSquareAnnotation({
       page,
       rect: [x1, y1, x2, y2],
       contents,
@@ -180,7 +195,7 @@ export default class HighlightManager {
     calloutLine,
     lineEndingStyle
   ) {
-    this._annotationFactory.createFreeTextAnnotation({
+    return this._annotationFactory.createFreeTextAnnotation({
       page,
       rect,
       contents,

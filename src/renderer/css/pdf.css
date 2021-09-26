@@ -61,6 +61,10 @@
   overflow-x: hidden;
 }
 
+#Viewer .textLayer > span {
+  /* color: black; */
+}
+
 #Annotationbar {
   position: fixed;
   right: 0;
@@ -90,12 +94,16 @@
 
 #pdfViewer .page {
   margin: 0 0 0 0;
-  padding: 0 0 0 0;
   border-image: none;
   border: none;
   box-shadow: 0 0 6px 0 black;
   display: block;
   position: relative;
+}
+
+#pdfViewer .page .unsaved-annotation {
+  position: absolute;
+  content: "";
 }
 
 #pdfViewer section.highlightAnnotation {
