@@ -2,7 +2,7 @@ import React, { useState, useReducer } from "react";
 import { getCurrentPath, handleFileSelect, handleFolderSelect } from "@/actions";
 import { listDir, watchOrReload } from "@/fileHelpers";
 import "file-icon-vectors/dist/file-icon-square-o.css";
-import "@/css/browser.css";
+import "@/css/browser.scss";
 
 export default function BrowserApp() {
   const [currentPath, setCurrentPath] = useState(getCurrentPath());

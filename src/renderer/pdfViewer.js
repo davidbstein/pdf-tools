@@ -7,7 +7,7 @@ import SteinPDFViewer from "@/pdf-components/SteinPDFViewer";
 
 import React, { Component } from "react";
 import "pdfjs-dist/web/pdf_viewer.css";
-import "@/css/pdf.css";
+import "@/css/pdf.scss";
 
 export default class PdfViewer extends Component {
   constructor(props) {

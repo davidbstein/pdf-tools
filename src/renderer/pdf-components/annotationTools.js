@@ -1,6 +1,4 @@
 import _ from "lodash";
-import { PDFAssembler } from "pdfassembler";
-import { PDFDocument } from "pdf-lib";
 import {
   selectionToNodes,
   renderAnnotationDivs,
@@ -12,6 +10,7 @@ import {
   colorToRGB,
 } from "@/pdf-components/AnnotationHelpers";
 import AnnotationTypes from "@/pdf-components/AnnotationTypes";
+import { AnnotationFactory } from "annotpdf";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 
 const DEFAULTS = {
@@ -30,6 +29,7 @@ export default class HighlightManager {
     this.annotateCurrentSelection = _.debounce(this.annotateCurrentSelection, 100, {
       trailing: true,
     });
+    this.getAnnotations = this.getAnnotations.bind(this);
     this.draw = this.draw.bind(this);
     this.setCurrentTool = this.setCurrentTool.bind(this);
     this._undoListener = this._undoListener.bind(this);
@@ -47,9 +47,7 @@ export default class HighlightManager {
 
     // load
     this._pdf._doc.getData().then((data) => {
-      this._assembler = new PDFAssembler(data);
-      debugger;
-      PDFDocument.load(data).then((pdfDoc) => (this._pdfLibDoc = pdfDoc));
+      this.annotationFactory = new AnnotationFactory(data);
       document.addEventListener("mouseup", (e) => {
         this._pendingSelectionChange ? this.annotateCurrentSelection() : null;
       });
@@ -102,8 +100,8 @@ export default class HighlightManager {
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
   }
 
-  _getAnnotations() {
-    return [];
+  getAnnotations() {
+    return this.annotationFactory.annotations;
   }
 
   _addAnnotation(annotation) {
@@ -115,6 +113,7 @@ export default class HighlightManager {
   }
 
   draw() {
+    const annotations = this.getAnnotations();
     for (let a of annotations) {
       if (this.annotationMap[a.id] == null) {
         this.annotationMap[a.id] = a;
@@ -158,7 +157,7 @@ export default class HighlightManager {
   }
 
   getRawPDFWithAnnotations(filename) {
-    return this._assembler.assemblePdf(filename);
+    return this.annotationFactory.write();
   }
 
   /**
@@ -174,19 +173,19 @@ export default class HighlightManager {
    */
   highlight(page, rect, contents, author, color, opacity, quadPoints) {
     const args = { page, rect, contents, author, color, opacity, quadPoints };
-    createHighlightAnnotation(args);
+    this.annotationFactory.createHighlightAnnotation(args);
   }
 
   underline(page, [x1, y1, x2, y2], contents, author, color, opacity, quadPoints, opts) {
     console.log("underline: not using options");
     const args = { page, rect: [x1, y1, x2, y2], contents, author, color, opacity, quadPoints };
-    createUnderlineAnnotation(args);
+    this.annotationFactory.createUnderlineAnnotation(args);
   }
 
   rectangle(page, [x1, y1, x2, y2], contents, author, outline_rgb, fill_rgb) {
     const rect = [x1, y1, x2, y2];
     const args = { page, rect, contents, author, color: outline_rgb, fill: fill_rgb };
-    createSquareAnnotation(args);
+    this.annotationFactory.createSquareAnnotation(args);
   }
 
   freeText(

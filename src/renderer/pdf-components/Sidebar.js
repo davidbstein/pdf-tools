@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import _ from "lodash";
-import "@/css/pdf-sidebar.css";
+import "@/css/pdf-sidebar.scss";
 
 /**
  * an outline is a list of nodes.

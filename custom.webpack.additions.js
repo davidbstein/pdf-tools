@@ -3,9 +3,10 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules(?!(\/|\\)pdfjs-dist)/,
+        include: /node_modules\/pdfjs-dist.*/,
         loader: "babel-loader",
         options: {
+          cacheDirectory: true,
           presets: [
             "@babel/preset-react",
             [
@@ -17,8 +18,15 @@ module.exports = {
               },
             ],
           ],
-          //          plugins: ["@babel/plugin-transform-runtime", "@babel/plugin-proposal-optional-chaining"],
         },
+      },
+      {
+        test: /\.scss$/,
+        use: ["sass-loader"],
+      },
+      {
+        test: /\.css$/,
+        use: ["sass-loader"],
       },
     ],
   },
