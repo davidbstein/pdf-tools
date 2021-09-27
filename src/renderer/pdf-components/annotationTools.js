@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { AnnotationFactory } from "annotpdf";
+import { PDFAssembler } from "pdfassembler";
 import {
   selectionToNodes,
   renderAnnotationDivs,
@@ -46,8 +46,7 @@ export default class HighlightManager {
 
     // load
     this._pdf._doc.getData().then((data) => {
-      this._annotationFactory = new AnnotationFactory(data);
-      window._annotationFactory = this._annotationFactory;
+      this._assembler = new PDFAssembler(data);
       document.addEventListener("mouseup", (e) => {
         this._pendingSelectionChange ? this.annotateCurrentSelection() : null;
       });
@@ -100,8 +99,19 @@ export default class HighlightManager {
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
   }
 
+  _getAnnotations() {
+    return [];
+  }
+
+  _addAnnotation(annotation) {
+    return;
+  }
+
+  getAnnotationsForPage(pageIdx) {
+    return [];
+  }
+
   draw() {
-    const annotations = this._annotationFactory.annotations;
     for (let a of annotations) {
       if (this.annotationMap[a.id] == null) {
         this.annotationMap[a.id] = a;
@@ -148,22 +158,8 @@ export default class HighlightManager {
     onAfterDraw(() => console.log("listener - after draw"));
   }
 
-  getAnnotationsForPage(pageIdx) {
-    return this._annotationFactory?.annotations?.filter(
-      (annotation) => annotation.page === pageIdx
-    );
-  }
-
-  getAnnotations() {
-    return this._annotationFactory?.getAnnotations();
-  }
-
-  getRawPDFWithAnnotations() {
-    return this._annotationFactory?.write();
-  }
-
-  download() {
-    return this._annotationFactory.download();
+  getRawPDFWithAnnotations(filename) {
+    return this._assembler.assemblePdf(filename);
   }
 
   /**
@@ -179,19 +175,19 @@ export default class HighlightManager {
    */
   highlight(page, rect, contents, author, color, opacity, quadPoints) {
     const args = { page, rect, contents, author, color, opacity, quadPoints };
-    return this._annotationFactory.createHighlightAnnotation(args);
+    createHighlightAnnotation(args);
   }
 
   underline(page, [x1, y1, x2, y2], contents, author, color, opacity, quadPoints, opts) {
     console.log("underline: not using options");
     const args = { page, rect: [x1, y1, x2, y2], contents, author, color, opacity, quadPoints };
-    return this._annotationFactory.createUnderlineAnnotation(args);
+    createUnderlineAnnotation(args);
   }
 
   rectangle(page, [x1, y1, x2, y2], contents, author, outline_rgb, fill_rgb) {
     const rect = [x1, y1, x2, y2];
     const args = { page, rect, contents, author, color: outline_rgb, fill: fill_rgb };
-    return this._annotationFactory.createSquareAnnotation(args);
+    createSquareAnnotation(args);
   }
 
   freeText(
@@ -205,7 +201,7 @@ export default class HighlightManager {
     calloutLine,
     lineEndingStyle
   ) {
-    return this._annotationFactory.createFreeTextAnnotation({
+    createFreeTextAnnotation({
       page,
       rect,
       contents,

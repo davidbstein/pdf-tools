@@ -60,8 +60,8 @@ export default class SteinPDFViewer {
   saveFileAndAnnotations() {
     const saveLoc = `${this._fileLocation}.highlightest.pdf`;
     console.log(`[SteinPdfViewer] SAVING - ${saveLoc}`);
-    const f = this._highlightManager.getRawPDFWithAnnotations();
-    fs.writeFileSync(saveLoc, f);
+    const f = this._highlightManager.getRawPDFWithAnnotations(saveLoc.split("/").pop());
+    fs.writeFile(saveLoc, f).then(() => console.log(`[SteinPdfViewer] SAVED - ${saveLoc}`));
   }
 
   _saveListener(e) {
