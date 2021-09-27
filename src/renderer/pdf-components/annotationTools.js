@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { PDFAssembler } from "pdfassembler";
+//import { PDFAssembler } from "pdfassembler";
 import {
   selectionToNodes,
   renderAnnotationDivs,
@@ -11,7 +11,7 @@ import {
   colorToRGB,
 } from "@/pdf-components/AnnotationHelpers";
 import AnnotationTypes from "@/pdf-components/AnnotationTypes";
-import { DOMSVGFactory } from "pdfjs-dist";
+import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 
 const DEFAULTS = {
   clearSelection: true,
