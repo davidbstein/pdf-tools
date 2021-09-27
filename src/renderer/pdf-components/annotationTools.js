@@ -1,5 +1,6 @@
 import _ from "lodash";
-//import { PDFAssembler } from "pdfassembler";
+import { PDFAssembler } from "pdfassembler";
+import { PDFDocument } from "pdf-lib";
 import {
   selectionToNodes,
   renderAnnotationDivs,
@@ -47,6 +48,8 @@ export default class HighlightManager {
     // load
     this._pdf._doc.getData().then((data) => {
       this._assembler = new PDFAssembler(data);
+      debugger;
+      PDFDocument.load(data).then((pdfDoc) => (this._pdfLibDoc = pdfDoc));
       document.addEventListener("mouseup", (e) => {
         this._pendingSelectionChange ? this.annotateCurrentSelection() : null;
       });
@@ -150,12 +153,8 @@ export default class HighlightManager {
     }
   }
 
-  _pageRenderListener({
-    pageNumber,
-    source: { annotationLayer, annotationLayerFactory, div: pageDiv, onBeforeDraw, onAfterDraw },
-  }) {
-    onBeforeDraw(() => console.log("listener - before draw"));
-    onAfterDraw(() => console.log("listener - after draw"));
+  _pageRenderListener({ pageNumber, source }) {
+    console.log("page render", pageNumber, source);
   }
 
   getRawPDFWithAnnotations(filename) {
