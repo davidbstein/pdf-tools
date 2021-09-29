@@ -3,7 +3,7 @@ import Toolbar from "@/pdf-components/Toolbar";
 import Sidebar from "@/pdf-components/Sidebar";
 import Statusbar from "@/pdf-components/Statusbar";
 import Annotationbar from "@/pdf-components/Annotationbar";
-import SteinPDFViewer from "@/pdf-components/SteinPDFViewer";
+import PDFAnnotationEditor from "@/annotation/PDFAnnotationEditor";
 
 import React, { Component } from "react";
 import "pdfjs-dist/web/pdf_viewer.css";
@@ -46,12 +46,12 @@ export default class PdfViewer extends Component {
   }
   readyForPDF(target) {
     if (window._pdf) {
-      this._pdfViewer = window._pdf;
+      this._pdfEditor = window._pdf;
     }
-    this._pdfViewer = new SteinPDFViewer(this.props.url, target);
-    this._eventBus = this._pdfViewer._eventBus;
+    this._pdfEditor = new PDFAnnotationEditor(this.props.url, target);
+    this._eventBus = this._pdfEditor._eventBus;
     this._eventBus.on("pagesinit", (e) => {
-      this.setState({ scale: this._pdfViewer.currentScale });
+      this.setState({ scale: this._pdfEditor.currentScale });
       this.setState({ pdf_ready: true });
       if (this.props.onInit) {
         this.props.onInit({});

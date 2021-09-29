@@ -2,9 +2,9 @@ import * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
 import fs from "fs";
 import { getDocument } from "pdfjs-dist/webpack";
 import _ from "lodash";
-import HighlightManager from "@/pdf-components/annotationTools";
+import HighlightManager from "@/annotation/HighlightManager";
 
-export default class SteinPDFViewer {
+export default class PDFAnnotationEditor {
   constructor(fileLocation, container) {
     // DOCUMENT LOADER
     this._container = container;

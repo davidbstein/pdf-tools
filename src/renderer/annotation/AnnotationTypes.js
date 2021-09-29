@@ -20,6 +20,11 @@
  */
 export default [
   {
+    name: "TEST COLOR",
+    highlight_color: "#cc3388",
+    opacity: 0.25,
+  },
+  {
     name: "Factual Content",
     highlight_color: "#fffab9",
     opacity: 0.25,
