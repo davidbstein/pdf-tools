@@ -19,6 +19,40 @@ const DEFAULTS = {
 };
 
 export default class HighlightManager {
+  runTests() {
+    console.log(`---- running tests ----`);
+    this.docProxy.listOutlines().map((outline) => {
+      this.docProxy.deleteOutline(outline);
+    });
+    this.docProxy.createOutline([
+      {
+        title: "testRoot",
+        dest: [0, { type: "XYZ", args: [null, null, null] }],
+        children: [
+          { title: "testChild0", dest: [0, { type: "XYZ", args: [null, null, null] }] },
+          {
+            title: "testChild1",
+            dest: [1, { type: "XYZ", args: [null, null, null] }],
+            children: [
+              {
+                title: "testChild1.1",
+                dest: [2, { type: "XYZ", args: [null, null, null] }],
+                children: [
+                  {
+                    title: "testChild1.1.1",
+                    dest: [3, { type: "XYZ", args: [null, null, null] }],
+                    children: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    this.getRawPDFWithAnnotations();
+  }
+
   constructor(pdfViewer) {
     //singleton initialization
     if (window.HighlightManager) return;
@@ -28,6 +62,7 @@ export default class HighlightManager {
     this.annotateSelection = _.debounce(this.annotateSelection.bind(this), 100, { trailing: true });
     this.draw = this.draw.bind(this);
     this.setCurrentTool = this.setCurrentTool.bind(this);
+    this.runTests = this.runTests.bind(this);
     this._undoListener = this._undoListener.bind(this);
 
     //instance internals
@@ -72,7 +107,6 @@ export default class HighlightManager {
   }
 
   annotateSelection(selectionChangeEvent) {
-    console.log(selectionChangeEvent);
     this._pendingSelectionChange = false;
 
     // only run if there is some selection
@@ -82,19 +116,23 @@ export default class HighlightManager {
     const pageIdx = pageNumber - 1;
     let tool = this.currentTool;
     let color, opacity, opts;
+
+    actions = [];
+    //act
     if (tool.highlight_color) {
       color = colorToRGB(tool.highlight_color);
       opacity = tool.opacity || 0.5;
       opts = {};
-      this.highlight({ pageIdx, color, opacity, quadPoints, opts });
+      actions.push(this.highlight({ pageIdx, color, opacity, quadPoints, opts }));
     }
     if (tool.underline_color) {
       color = colorToRGB(tool.underline_color);
       opacity = tool.opacity || 1;
       opts = { thickness: tool.underline_thickness };
-      this.underline({ pageIdx, color, opacity, quadPoints, opts });
+      actions.push(this.underline({ pageIdx, color, opacity, quadPoints, opts }));
     }
-    //ADD TO UNDO INFO
+    //TODO; add undo info
+    this.undoQueue.push(actions);
     this.draw();
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
   }
@@ -126,6 +164,10 @@ export default class HighlightManager {
       annotation.is_deleted = true;
       this.draw();
     }
+  }
+
+  async getRawPDFWithAnnotations(filename) {
+    return await this.docProxy.getRawPDFWithAnnotations(filename);
   }
 
   _pageRenderListener({ pageNumber, source }) {

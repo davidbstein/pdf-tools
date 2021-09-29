@@ -52,6 +52,8 @@ import {
   PDFNumber,
   PDFRef,
 } from "pdf-lib";
+import { node } from "prop-types";
+import { colorToHex } from "./AnnotationHelpers";
 
 function PDFObjToDict(pdfObj) {
   let obj = {
@@ -91,11 +93,19 @@ export default class DocProxy {
 
   constructor(data) {
     //bind
+    this._createOutlineItem = this._createOutlineItem.bind(this);
+    this._rootToOutline = this._rootToOutline.bind(this);
+    this.addAnnotation = this.addAnnotation.bind(this);
+    this.createOutline = this.createOutline.bind(this);
+    this.deleteOutline = this.deleteOutline.bind(this);
     this.getAllIndirectObjects = this.getAllIndirectObjects.bind(this);
     this.listAnnotations = this.listAnnotations.bind(this);
     this.listOutlines = this.listOutlines.bind(this);
-    this._rootToOutline = this._rootToOutline.bind(this);
+    this.listPageRefs = this.listPageRefs.bind(this);
     this.lookupDict = this.lookupDict.bind(this);
+    this.removeAnnotation = this.removeAnnotation.bind(this);
+    this.deleteOutline = this.deleteOutline.bind(this);
+    this.createAnnotationItem = this.createAnnotationItem.bind(this);
     // load
     this._initializeDocument = this._initializeDocument.bind(this);
     this._initializeDocument(data);
@@ -105,11 +115,12 @@ export default class DocProxy {
     PDFDocument.load(data).then((doc) => {
       this.doc = doc;
       this.pages = doc.getPages();
+      this.context = doc.context;
     });
   }
 
   getAllIndirectObjects() {
-    return _.toArray(this.doc.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
+    return _.toArray(this.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
   }
 
   lookupDict(refDict) {
@@ -136,6 +147,10 @@ export default class DocProxy {
       .map(this._rootToOutline);
   }
 
+  listPageRefs() {
+    return [this.pages.map((page) => this.context.getObjectRef(page.__obj))];
+  }
+
   _rootToOutline(node, parent) {
     const children = [];
     if (node["/First"]) {
@@ -149,8 +164,19 @@ export default class DocProxy {
     return { node, title: node["/Title"], children, dest: node["/Dest"] };
   }
 
-  deleteOutline() {
-    //TODO
+  deleteOutline(outlineRoot) {
+    for (let node of outlineRoot.children) this.deleteOutline(node);
+    const ref = this.context.getObjectRef(outlineRoot.node.__obj);
+    this.doc.context.delete(ref);
+  }
+
+  _genDest([pageIdx, destDict], context) {
+    let dest = PDFArray.withContext(context);
+    dest.push(PDFName.of(destDict.type));
+    destDict.args.map((arg) => {
+      dest.push(arg == null ? PDFNull : new PDFNumber(arg));
+    });
+    return dest;
   }
 
   /**
@@ -158,17 +184,80 @@ export default class DocProxy {
    * [
    *  {
    *   title: "Title",
-   *   dest: PDFArray([PDFPage, "/XYZ", x?, y?, z?])
+   *   dest: ([pageIdx, {type, args]}])
    *   children: [{}, {}, ...]
    *  }, {}, ...
    * ]
    */
-  createOutline(outlineDict) {
+  createOutline(outline) {
     //TODO
-    // generate all refs up front
-    // associate refs with outline.
-    // generate outline notes
-    // add outline nodes to tree
+    const pageRefs = this.listPageRefs();
+    const root = {
+      children: outline,
+      _root: true,
+    };
+    let current = root;
+    let all_items = [];
+    while (true) {
+      // console.log(">> - ", current);
+      if (!current.info) {
+        all_items.push(current);
+        current.info = {};
+        current.info.ref = this.doc.context.nextRef();
+        if (current.dest) current.info.dest = this._genDest(current.dest, this.context);
+        if (current.title) current.info.title = current.title;
+        if (current.children?.length > 0) {
+          current.children.forEach((child, idx, array) => {
+            child.parent = current;
+            if (idx > 0) child.prev = array[idx - 1];
+            if (idx < array.length - 1) child.next = array[idx + 1];
+          });
+          current.first = current.children[0];
+          current.last = current.children[current.children.length - 1];
+          current.info.count = current.children.length;
+        }
+      }
+      // console.log(">> + ", current);
+      if (current.first && !current.first.info) {
+        // console.log("first", current.first);
+        current = current.first;
+      } else if (current.next) {
+        if (current.count) current.parent.info.count += current.info.count;
+        // console.log("next", current.next);
+        current = current.next;
+      } else if (current.parent) {
+        if (current.count) current.parent.info.count += current.info.count;
+        // console.log("parent", current.parent);
+        current = current.parent;
+      } else if (current._root) {
+        break;
+      }
+    }
+    console.log("ROOT NODE", root);
+    // initialize Map that will become the PDFDict
+    let map;
+    for (let {
+      info: { count, title, ref, dest },
+      first,
+      last,
+      next,
+      prev,
+      parent,
+      _root,
+    } of all_items) {
+      map = new Map();
+      if (_root) map.set(PDFName.Type, PDFName.of("Outlines"));
+      if (title) map.set(PDFName.Title, PDFString.of(title));
+      if (parent) map.set(PDFName.Parent, parent.info.ref);
+      if (next) map.set(PDFName.of("Next"), next.info.ref);
+      if (prev) map.set(PDFName.of("Prev"), prev.info.ref);
+      if (first) map.set(PDFName.of("First"), first.info.ref);
+      if (last) map.set(PDFName.of("Last"), last.info.ref);
+      if (dest) map.set(PDFName.of("Dest"), dest);
+      if (count) map.set(PDFName.of("Count"), PDFNumber.of(count));
+      this.context.assign(ref, PDFDict.fromMapWithContext(map, this.context));
+      console.log(ref);
+    }
   }
 
   addAnnotation() {
@@ -195,7 +284,7 @@ export default class DocProxy {
     return await this.doc.save();
   }
 
-  _createOutlineItem(title, parent, next, prev, pageRef) {
+  _createOutlineItem({}) {
     let dest = PDFArray.withContext(pdfDoc.context);
     dest.push(pageRef);
     dest.push(PDFName.of("XYZ"));
