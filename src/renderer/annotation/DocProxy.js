@@ -93,7 +93,6 @@ export default class DocProxy {
 
   constructor(data) {
     //bind
-    this._createOutlineItem = this._createOutlineItem.bind(this);
     this._rootToOutline = this._rootToOutline.bind(this);
     this.addAnnotation = this.addAnnotation.bind(this);
     this.createOutline = this.createOutline.bind(this);
@@ -115,12 +114,11 @@ export default class DocProxy {
     PDFDocument.load(data).then((doc) => {
       this.doc = doc;
       this.pages = doc.getPages();
-      this.context = doc.context;
     });
   }
 
   getAllIndirectObjects() {
-    return _.toArray(this.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
+    return _.toArray(this.doc.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
   }
 
   lookupDict(refDict) {
@@ -148,7 +146,7 @@ export default class DocProxy {
   }
 
   listPageRefs() {
-    return [this.pages.map((page) => this.context.getObjectRef(page.__obj))];
+    return [this.pages.map((page) => this.doc.context.getObjectRef(page.__obj))];
   }
 
   _rootToOutline(node, parent) {
@@ -166,12 +164,15 @@ export default class DocProxy {
 
   deleteOutline(outlineRoot) {
     for (let node of outlineRoot.children) this.deleteOutline(node);
-    const ref = this.context.getObjectRef(outlineRoot.node.__obj);
+    const ref = this.doc.context.getObjectRef(outlineRoot.node.__obj);
     this.doc.context.delete(ref);
+    this.doc.flush();
   }
 
   _genDest([pageIdx, destDict], context) {
+    let pageRef = this.pages[pageIdx].ref;
     let dest = PDFArray.withContext(context);
+    dest.push(pageRef);
     dest.push(PDFName.of(destDict.type));
     destDict.args.map((arg) => {
       dest.push(arg == null ? PDFNull : new PDFNumber(arg));
@@ -190,7 +191,7 @@ export default class DocProxy {
    * ]
    */
   createOutline(outline) {
-    //TODO
+    //TODO: COUNT IS WRONG
     const pageRefs = this.listPageRefs();
     const root = {
       children: outline,
@@ -204,7 +205,7 @@ export default class DocProxy {
         all_items.push(current);
         current.info = {};
         current.info.ref = this.doc.context.nextRef();
-        if (current.dest) current.info.dest = this._genDest(current.dest, this.context);
+        if (current.dest) current.info.dest = this._genDest(current.dest, this.doc.context);
         if (current.title) current.info.title = current.title;
         if (current.children?.length > 0) {
           current.children.forEach((child, idx, array) => {
@@ -236,15 +237,10 @@ export default class DocProxy {
     console.log("ROOT NODE", root);
     // initialize Map that will become the PDFDict
     let map;
-    for (let {
-      info: { count, title, ref, dest },
-      first,
-      last,
-      next,
-      prev,
-      parent,
-      _root,
-    } of all_items) {
+    console.groupCollapsed(" ~Outline to be written~ ");
+    for (let { info, ...rest } of all_items) {
+      const { count, title, ref, dest } = info;
+      const { first, last, next, prev, parent, _root } = rest;
       map = new Map();
       if (_root) map.set(PDFName.Type, PDFName.of("Outlines"));
       if (title) map.set(PDFName.Title, PDFString.of(title));
@@ -255,9 +251,11 @@ export default class DocProxy {
       if (last) map.set(PDFName.of("Last"), last.info.ref);
       if (dest) map.set(PDFName.of("Dest"), dest);
       if (count) map.set(PDFName.of("Count"), PDFNumber.of(count));
-      this.context.assign(ref, PDFDict.fromMapWithContext(map, this.context));
-      console.log(ref);
+      let dict = PDFDict.fromMapWithContext(map, this.doc.context);
+      this.doc.context.assign(ref, dict);
+      console.log(ref, dict.toString(), _.fromPairs(Array.from(map.entries(), (e) => e)));
     }
+    console.groupEnd();
   }
 
   addAnnotation() {
@@ -279,27 +277,14 @@ export default class DocProxy {
     return metadata;
   }
 
-  async getRawPDFWithAnnotations(filename) {
-    //return this.annotationFactory.write();
-    return await this.doc.save();
+  async getDocAsBytes(options) {
+    return await this.doc.save({ useObjectStreams: false });
   }
 
-  _createOutlineItem({}) {
-    let dest = PDFArray.withContext(pdfDoc.context);
-    dest.push(pageRef);
-    dest.push(PDFName.of("XYZ"));
-    dest.push(PDFNull);
-    dest.push(PDFNull);
-    dest.push(PDFNull);
-
-    const map = new Map();
-    map.set(PDFName.Title, PDFString.of(title));
-    if (parent) map.set(PDFName.Parent, parent);
-    if (next) map.set(PDFName.of("Next"), next);
-    if (prev) map.set(PDFName.of("Prev"), prev);
-    map.set(PDFName.of("Dest"), dest);
-
-    return PDFDict.fromMapWithContext(map, pdfDoc.context);
+  async genPDF() {
+    await this.doc.flush();
+    let offset = 0;
+    const buffer = new Uint8Array(size);
   }
 
   createAnnotationItem(pdfDoc, page, options) {

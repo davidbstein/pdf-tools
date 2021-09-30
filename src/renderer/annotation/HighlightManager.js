@@ -21,7 +21,9 @@ const DEFAULTS = {
 export default class HighlightManager {
   runTests() {
     console.log(`---- running tests ----`);
-    this.docProxy.listOutlines().map((outline) => {
+    const outlines = this.docProxy.listOutlines();
+    console.log("current outlines", outlines);
+    outlines.map((outline) => {
       this.docProxy.deleteOutline(outline);
     });
     this.docProxy.createOutline([
@@ -50,7 +52,9 @@ export default class HighlightManager {
         ],
       },
     ]);
-    this.getRawPDFWithAnnotations();
+    this.docProxy.getDocAsBytes();
+    console.log("loading window.d = <PDFDocument object>");
+    window.d = this.docProxy.doc;
   }
 
   constructor(pdfViewer) {
@@ -78,6 +82,13 @@ export default class HighlightManager {
 
     // load
     this._initializeDocument();
+    console.warn(
+      "%cYOU MUST DELETE THIS IT'S FOR TESTING",
+      "color: red",
+      setTimeout(function () {
+        window.HighlightManager.runTests();
+      }, 1000)
+    );
   }
 
   async _initializeDocument() {
@@ -166,8 +177,8 @@ export default class HighlightManager {
     }
   }
 
-  async getRawPDFWithAnnotations(filename) {
-    return await this.docProxy.getRawPDFWithAnnotations(filename);
+  async getPDFBytes(options) {
+    return await this.docProxy.getDocAsBytes();
   }
 
   _pageRenderListener({ pageNumber, source }) {
