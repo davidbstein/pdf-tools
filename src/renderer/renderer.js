@@ -1,10 +1,9 @@
-import "@/css/reset.css";
-import "@/css/main.css";
+import "@/css/main.scss";
 
 import ReactDOM from "react-dom";
 import React from "react";
-import PdfViewer from "@/pdfViewer.js";
-import BrowserApp from "./browserApp";
+import PdfViewer from "@/pdf-components/pdfViewer.js";
+import BrowserApp from "./file-browser/browserApp";
 import { getCurrentPath } from "@/actions";
 import _ from "lodash";
 

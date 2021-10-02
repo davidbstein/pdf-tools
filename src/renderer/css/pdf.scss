@@ -61,10 +61,6 @@
   overflow-x: hidden;
 }
 
-#Viewer .textLayer > span {
-  /* color: black; */
-}
-
 #Annotationbar {
   position: fixed;
   right: 0;
@@ -80,45 +76,50 @@
   z-index: 1;
 }
 
-#pdfViewer {
-  --gap-size: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: center;
-  align-content: flex-start;
-  gap: var(--gap-size);
-  padding: var(--gap-size);
-  background-color: grey;
-}
+#Viewer {
+  .textLayer > span {
+    color: default;
+  }
+  #pdfViewer {
+    --gap-size: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: flex-start;
+    gap: var(--gap-size);
+    padding: var(--gap-size);
+    background-color: grey;
 
-#pdfViewer .page {
-  margin: 0 0 0 0;
-  border-image: none;
-  border: none;
-  box-shadow: 0 0 6px 0 black;
-  display: block;
-  position: relative;
-}
+    .page {
+      margin: 0 0 0 0; /*hi */
+      border-image: none;
+      border: none;
+      box-shadow: 0 0 6px 0 black;
+      display: block;
+      position: relative;
 
-#pdfViewer .page .unsaved-annotation {
-  position: absolute;
-  content: "";
-}
+      .unsaved-annotation {
+        position: absolute;
+        content: "";
+      }
 
-#pdfViewer .page .textLayer {
-  opacity: 1;
-}
+      .textLayer {
+        opacity: 1;
+      }
 
-#pdfViewer .page .textLayer::selection,
-#pdfViewer .page .textLayer span::selection {
-  background: var(--highlight-color);
-  background-color: var(--highlight-color);
-  text-decoration: var(--highlight-text-decoration);
-  border: 1px solid black;
-  opacity: var(--highlight-opacity);
-}
+      .textLayer ::selection, /* needed to overload Mozilla's defaults*/
+    .textLayer span::selection {
+        background: var(--highlight-color);
+        background-color: var(--highlight-color);
+        text-decoration: var(--highlight-text-decoration);
+        border: 1px solid black;
+        opacity: var(--highlight-opacity);
+      }
+    }
 
-#pdfViewer section.highlightAnnotation {
-  pointer-events: none;
+    section.highlightAnnotation {
+      pointer-events: none;
+    }
+  }
 }

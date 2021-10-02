@@ -1,13 +1,17 @@
-div#folder-broser {
+:root {
+  --browser-bg-color: #ddd;
+}
+
+#folder-broser {
   margin: none;
 }
 
-div#current-path {
+#current-path {
   height: var(--top-header-height);
   line-height: var(--top-header-height);
   font: bold;
   border-bottom: solid;
-  background: #ddd;
+  background: var(--browser-bg-color);
   position: fixed;
   padding: var(--top-header-padding);
   top: 0;
@@ -15,7 +19,7 @@ div#current-path {
   z-index: 1;
 }
 
-div#file-list {
+#file-list {
   padding-top: calc(4 * var(--top-header-padding) + var(--top-header-height));
 }
 
@@ -30,8 +34,11 @@ div#file-list {
 .file-link {
   color: #000;
   padding: 4px;
+  height: 1em;
+  /*expand in*/
+  animation: expand-in 0.5s;
+  transition: all 0.5s;
 }
-
 .fiv-sqo {
   filter: grayscale(100%);
 }
@@ -39,14 +46,21 @@ div#file-list {
   filter: grayscale(0%);
 }
 
-/* 
-.folder-name {
-}
-
-.file-name {
-} 
-*/
-
 .dir-ent-name {
   margin: 0 4px;
+}
+
+@keyframes expand-in {
+  0% {
+    height: 0px;
+    background: grey;
+    overflow-y: hidden;
+  }
+  50% {
+    background: var(--browser-bg-color);
+  }
+  100% {
+    height: default;
+    background: var(--browser-bg-color);
+  }
 }

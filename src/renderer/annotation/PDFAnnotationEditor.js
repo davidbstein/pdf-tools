@@ -2,9 +2,9 @@ import * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
 import fs from "fs";
 import { getDocument } from "pdfjs-dist/webpack";
 import _ from "lodash";
-import HighlightManager from "@/pdf-components/annotationTools";
+import HighlightManager from "@/annotation/HighlightManager";
 
-export default class SteinPDFViewer {
+export default class PDFAnnotationEditor {
   constructor(fileLocation, container) {
     // DOCUMENT LOADER
     this._container = container;
@@ -57,11 +57,12 @@ export default class SteinPDFViewer {
     this._eventBus.on("updateviewarea", callback);
   }
 
-  saveFileAndAnnotations() {
-    const saveLoc = `${this._fileLocation}.highlightest.pdf`;
+  async saveFileAndAnnotations() {
+    const saveLoc = `${this._fileLocation}`;
     console.log(`[SteinPdfViewer] SAVING - ${saveLoc}`);
-    const f = this._highlightManager.getRawPDFWithAnnotations();
+    const f = await this._highlightManager.getPDFBytes({ filename: saveLoc.split("/").pop() });
     fs.writeFileSync(saveLoc, f);
+    console.log(`[SteinPdfViewer] SAVED - ${saveLoc}`);
   }
 
   _saveListener(e) {

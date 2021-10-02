@@ -55,6 +55,7 @@ export function colorToHex(color, opacity) {
  */
 export function selectionToNodes(selection) {
   const nodes = [];
+  if (selection.rangeCount == 0) return nodes;
   const range = selection.getRangeAt(0);
   const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) =>
