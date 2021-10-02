@@ -58,7 +58,7 @@ export default class PDFAnnotationEditor {
   }
 
   async saveFileAndAnnotations() {
-    const saveLoc = `${this._fileLocation}.highlightest.pdf`;
+    const saveLoc = `${this._fileLocation}`;
     console.log(`[SteinPdfViewer] SAVING - ${saveLoc}`);
     const f = await this._highlightManager.getPDFBytes({ filename: saveLoc.split("/").pop() });
     fs.writeFileSync(saveLoc, f);

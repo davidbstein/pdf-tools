@@ -18,43 +18,51 @@ const DEFAULTS = {
   tool: AnnotationTypes[0],
 };
 
+function testOutlineWriter(hm) {
+  console.group(`---- running outline writer integration test ----`);
+  const outlines = this.docProxy.listOutlines();
+  console.log("current outlines", outlines);
+  outlines.map((outline) => {
+    hm.docProxy.deleteOutline(outline);
+  });
+  hm.docProxy.createOutline([
+    {
+      title: "testRoot",
+      page: 0,
+      children: [
+        {
+          title: "testChild0",
+          page: 1,
+        },
+        {
+          title: "testChild1",
+          page: 2,
+          children: [
+            {
+              title: "testChild1.1",
+              page: 3,
+              children: [
+                {
+                  title: "testChild1.1.1",
+                  page: [4, { type: "XYZ", args: [null, null, null] }],
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+  hm.docProxy.getDocAsBytes();
+  console.log("loading window.d = <PDFDocument object>");
+  window.d = hm.docProxy.doc;
+  console.groupEnd();
+}
+
 export default class HighlightManager {
   runTests() {
-    console.log(`---- running tests ----`);
-    const outlines = this.docProxy.listOutlines();
-    console.log("current outlines", outlines);
-    outlines.map((outline) => {
-      this.docProxy.deleteOutline(outline);
-    });
-    this.docProxy.createOutline([
-      {
-        title: "testRoot",
-        dest: [0, { type: "XYZ", args: [null, null, null] }],
-        children: [
-          { title: "testChild0", dest: [0, { type: "XYZ", args: [null, null, null] }] },
-          {
-            title: "testChild1",
-            dest: [1, { type: "XYZ", args: [null, null, null] }],
-            children: [
-              {
-                title: "testChild1.1",
-                dest: [2, { type: "XYZ", args: [null, null, null] }],
-                children: [
-                  {
-                    title: "testChild1.1.1",
-                    dest: [3, { type: "XYZ", args: [null, null, null] }],
-                    children: [],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ]);
-    this.docProxy.getDocAsBytes();
-    console.log("loading window.d = <PDFDocument object>");
-    window.d = this.docProxy.doc;
+    //testOutlineWriter(this);
   }
 
   constructor(pdfViewer) {
@@ -128,7 +136,7 @@ export default class HighlightManager {
     let tool = this.currentTool;
     let color, opacity, opts;
 
-    actions = [];
+    const actions = [];
     //act
     if (tool.highlight_color) {
       color = colorToRGB(tool.highlight_color);

@@ -28,9 +28,7 @@ class OutlineNode extends Component {
     const {
       currentPath,
       level,
-      node: {
-        dest: [destination],
-      },
+      node: { dest: destination },
     } = this.props;
     const isCurrent = _.isEqual(currentPath, [level]);
     this.state = {
@@ -38,14 +36,14 @@ class OutlineNode extends Component {
       pageIndex: null,
     };
     window._pdf.lookupDestinationPage(
-      destination,
+      destination?.[0],
       ((pageIndex) => this.setState({ pageIndex })).bind(this)
     );
     this.goToNode = this.goToNode.bind(this);
   }
 
   goToNode() {
-    window._pdf.goToDestinationPage(this.props.node.dest[0]);
+    window._pdf.goToDestinationPage(this.props.node.dest?.[0]);
   }
 
   render() {
@@ -63,11 +61,9 @@ class OutlineNode extends Component {
           )}
         </div>
         <div className="outline-subnodes">
-          {" "}
-          {expanded &&
-            node.items.map((node, index) => (
-              <OutlineNode key={index} node={node} currentPath={currentPath} level={level + 1} />
-            ))}
+          {node.items.map((node, index) => (
+            <OutlineNode key={index} node={node} currentPath={currentPath} level={level + 1} />
+          ))}
         </div>
       </div>
     );
@@ -88,7 +84,6 @@ export default class Sidebar extends Component {
     return (
       <div id="Sidebar">
         <div id="OutlineView">
-          <h1>Outline</h1>
           <Outline outline={this.state.outline} />
         </div>
       </div>

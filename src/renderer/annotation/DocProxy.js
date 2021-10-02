@@ -95,6 +95,7 @@ export default class DocProxy {
     //bind
     this._rootToOutline = this._rootToOutline.bind(this);
     this.addAnnotation = this.addAnnotation.bind(this);
+    this.createAnnotationItem = this.createAnnotationItem.bind(this);
     this.createOutline = this.createOutline.bind(this);
     this.deleteOutline = this.deleteOutline.bind(this);
     this.getAllIndirectObjects = this.getAllIndirectObjects.bind(this);
@@ -103,8 +104,7 @@ export default class DocProxy {
     this.listPageRefs = this.listPageRefs.bind(this);
     this.lookupDict = this.lookupDict.bind(this);
     this.removeAnnotation = this.removeAnnotation.bind(this);
-    this.deleteOutline = this.deleteOutline.bind(this);
-    this.createAnnotationItem = this.createAnnotationItem.bind(this);
+    this.updateMaxObjectNumber = this.updateMaxObjectNumber.bind(this);
     // load
     this._initializeDocument = this._initializeDocument.bind(this);
     this._initializeDocument(data);
@@ -162,14 +162,28 @@ export default class DocProxy {
     return { node, title: node["/Title"], children, dest: node["/Dest"] };
   }
 
-  deleteOutline(outlineRoot) {
-    for (let node of outlineRoot.children) this.deleteOutline(node);
+  updateMaxObjectNumber() {
+    let maxObjectNumber = 0;
+    for (let [entry, _] of this.doc.context.indirectObjects.entries())
+      maxObjectNumber = Math.max(maxObjectNumber, entry.objectNumber);
+    this.doc.context.largestObjectNumber = maxObjectNumber;
+    console.log(`reset max object number to: ${maxObjectNumber}`);
+  }
+
+  deleteOutline(outlineRoot, shouldUpdateMaxObjectNumber = false) {
+    for (let node of outlineRoot.children) this.deleteOutline(node, false);
     const ref = this.doc.context.getObjectRef(outlineRoot.node.__obj);
     this.doc.context.delete(ref);
+    if (shouldUpdateMaxObjectNumber) this.updateMaxObjectNumber();
     this.doc.flush();
   }
 
-  _genDest([pageIdx, destDict], context) {
+  _genDest(page, context) {
+    const [pageIdx, destDict] = [
+      typeof page === "number" ? page : page[0],
+      typeof page === "number" ? { type: "XYZ", args: [null, null, null] } : page[1],
+    ];
+    console.log("GEN DEST", pageIdx, destDict);
     let pageRef = this.pages[pageIdx].ref;
     let dest = PDFArray.withContext(context);
     dest.push(pageRef);
@@ -185,13 +199,13 @@ export default class DocProxy {
    * [
    *  {
    *   title: "Title",
-   *   dest: ([pageIdx, {type, args]}])
+   *   page: pageIdx | [pageIdx, {type, args]}]
    *   children: [{}, {}, ...]
    *  }, {}, ...
    * ]
    */
   createOutline(outline) {
-    //TODO: COUNT IS WRONG
+    console.log(`largestObjectNumber = ${this.doc.context.largestObjectNumber}`);
     const pageRefs = this.listPageRefs();
     const root = {
       children: outline,
@@ -200,12 +214,13 @@ export default class DocProxy {
     let current = root;
     let all_items = [];
     while (true) {
-      // console.log(">> - ", current);
       if (!current.info) {
         all_items.push(current);
         current.info = {};
         current.info.ref = this.doc.context.nextRef();
-        if (current.dest) current.info.dest = this._genDest(current.dest, this.doc.context);
+        current.info.count = 0;
+        if (current.page != undefined)
+          current.info.dest = this._genDest(current.page, this.doc.context);
         if (current.title) current.info.title = current.title;
         if (current.children?.length > 0) {
           current.children.forEach((child, idx, array) => {
@@ -215,20 +230,17 @@ export default class DocProxy {
           });
           current.first = current.children[0];
           current.last = current.children[current.children.length - 1];
-          current.info.count = current.children.length;
+        }
+        let par = current;
+        while ((par = par.parent)) {
+          par.info.count++;
         }
       }
-      // console.log(">> + ", current);
       if (current.first && !current.first.info) {
-        // console.log("first", current.first);
         current = current.first;
       } else if (current.next) {
-        if (current.count) current.parent.info.count += current.info.count;
-        // console.log("next", current.next);
         current = current.next;
       } else if (current.parent) {
-        if (current.count) current.parent.info.count += current.info.count;
-        // console.log("parent", current.parent);
         current = current.parent;
       } else if (current._root) {
         break;
@@ -236,12 +248,12 @@ export default class DocProxy {
     }
     console.log("ROOT NODE", root);
     // initialize Map that will become the PDFDict
-    let map;
-    console.groupCollapsed(" ~Outline to be written~ ");
+    console.groupCollapsed(" ~created outline!~ ");
     for (let { info, ...rest } of all_items) {
+      console.log(">>", info);
       const { count, title, ref, dest } = info;
       const { first, last, next, prev, parent, _root } = rest;
-      map = new Map();
+      const map = new Map();
       if (_root) map.set(PDFName.Type, PDFName.of("Outlines"));
       if (title) map.set(PDFName.Title, PDFString.of(title));
       if (parent) map.set(PDFName.Parent, parent.info.ref);
@@ -251,10 +263,12 @@ export default class DocProxy {
       if (last) map.set(PDFName.of("Last"), last.info.ref);
       if (dest) map.set(PDFName.of("Dest"), dest);
       if (count) map.set(PDFName.of("Count"), PDFNumber.of(count));
-      let dict = PDFDict.fromMapWithContext(map, this.doc.context);
+      const dict = PDFDict.fromMapWithContext(map, this.doc.context);
       this.doc.context.assign(ref, dict);
-      console.log(ref, dict.toString(), _.fromPairs(Array.from(map.entries(), (e) => e)));
+      if (_root) this.doc.catalog.set(PDFName.of("Outlines"), ref);
+      console.log(dict.toString()); //, _.fromPairs(Array.from(map.entries(), (e) => e)));
     }
+    console.log(this.doc.catalog.toString());
     console.groupEnd();
   }
 
