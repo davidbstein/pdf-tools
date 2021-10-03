@@ -272,18 +272,6 @@ export default class DocProxy {
     console.groupEnd();
   }
 
-  addAnnotation() {
-    //TODO
-  }
-
-  removeAnnotation() {
-    //TODO
-  }
-
-  modifyAnnotation() {
-    //TODO
-  }
-
   getDocMetadata() {
     const dictMap = this.doc.getInfoDict().dict;
     const metadata = {};
@@ -299,6 +287,18 @@ export default class DocProxy {
     await this.doc.flush();
     let offset = 0;
     const buffer = new Uint8Array(size);
+  }
+
+  addAnnotation() {
+    //TODO
+  }
+
+  removeAnnotation() {
+    //TODO
+  }
+
+  modifyAnnotation() {
+    //TODO
   }
 
   createAnnotationItem(pdfDoc, page, options) {
