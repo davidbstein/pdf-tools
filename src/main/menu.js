@@ -1,24 +1,34 @@
 import { Menu } from "electron";
 
-export default function generateMenu(app, { openFile, saveFile, closeFile }) {
+export default function generateMenu(app, callbacks) {
+  function doCallback(command, args) {
+    console.log(
+      `== menu command intercepted: ${command}. ${
+        callbacks[command] ? "Handler available" : "NOT HANDLED"
+      } ==`
+    );
+    if (callbacks[command]) {
+      callbacks[command]({ application: args[0], menu: args[1], event: args[2] });
+    }
+  }
   const TEMPLATE = [
     {
       label: "File",
       submenu: [
         {
+          click: () => doCallback("Open", arguments),
           label: "Open",
           accelerator: "CmdOrCtrl+O",
-          click: openFile,
         },
         {
+          click: () => doCallback("Save", arguments),
           label: "Save",
           accelerator: "CmdOrCtrl+S",
-          click: saveFile,
         },
         {
+          click: () => doCallback("Close", arguments),
           label: "Close",
           accelerator: "CmdOrCtrl+W",
-          click: closeFile,
         },
       ],
     },
@@ -26,40 +36,70 @@ export default function generateMenu(app, { openFile, saveFile, closeFile }) {
       label: "Edit",
       submenu: [
         {
+          click: () => doCallback("Undo", arguments),
           label: "Undo",
           accelerator: "CmdOrCtrl+Z",
-          role: "undo",
         },
         {
+          click: () => doCallback("Redo", arguments),
           label: "Redo",
           accelerator: "Shift+CmdOrCtrl+Z",
-          role: "redo",
         },
         {
           type: "separator",
         },
         {
+          click: () => doCallback("Cut", arguments),
           label: "Cut",
           accelerator: "CmdOrCtrl+X",
           role: "cut",
         },
         {
+          click: () => doCallback("Copy", arguments),
           label: "Copy",
           accelerator: "CmdOrCtrl+C",
           role: "copy",
         },
         {
+          click: () => doCallback("Paste", arguments),
           label: "Paste",
           accelerator: "CmdOrCtrl+V",
           role: "paste",
         },
+      ],
+    },
+    {
+      label: "Highlight",
+      submenu: [
         {
-          label: "Select All",
-          accelerator: "CmdOrCtrl+A",
-          role: "selectall",
+          click: () => doCallback("Highlight", arguments),
+          label: "Highlight",
+        },
+        {
+          click: () => doCallback("Underline", arguments),
+          label: "Underline",
+        },
+        {
+          click: () => doCallback("Erase", arguments),
+          label: "Erase",
+        },
+        {
+          click: () => doCallback("Comment", arguments),
+          label: "Comment",
+        },
+        {
+          click: () => doCallback("Bookmark", arguments),
+          label: "Bookmark",
+        },
+        {
+          click: () => doCallback("Outline", arguments),
+          label: "Outline",
         },
       ],
     },
+    { role: "viewMenu" },
+    { role: "windowMenu" },
+    { role: "help", submenu: [{ label: "Learn More", click: callbacks?.help }] },
   ];
 
   if (process.platform == "darwin") {

@@ -49,6 +49,7 @@ export function colorToHex(color, opacity) {
   }
   return hexColor;
 }
+
 /**
  * given a javascript selection, return a list of text nodes in the selection
  * @param {Selection} selection
@@ -65,7 +66,9 @@ export function selectionToNodes(selection) {
     nodes.push(walker.currentNode);
   }
   // split the first and last element if they are not in the selection, then remove them from the nodelist
-  if (nodes.length == 0) return [];
+  if (nodes.length == 0) {
+    return [];
+  }
   if (range.startOffset) {
     nodes[0] = nodes[0].splitText(range.startOffset);
   }
@@ -112,6 +115,17 @@ function quadPointArrayToRects(quadPointArray, pageRect) {
   return _.chunk(quadPointArray, 8).map((quad) => quadPointToRect(quad, pageRect));
 }
 
+function quadPointArrayToBoundingRect(quadPointArray) {
+  const quads = _.chunk(quadPointArray, 2);
+  const rawRect = {
+    xmin: _.min(quads.map(([x, y]) => x)),
+    xmax: _.max(quads.map(([x, y]) => x)),
+    ymin: _.min(quads.map(([x, y]) => y)),
+    ymax: _.max(quads.map(([x, y]) => y)),
+  };
+  return [rawRect.xmin, rawRect.ymin, rawRect.xmax - rawRect.xmin, rawRect.ymax - rawRect.ymin];
+}
+
 function getPageDiv(pageNum) {
   for (let page of document.getElementsByClassName("page")) {
     if (page.getAttribute("data-page-number") == pageNum) return page;
@@ -155,23 +169,27 @@ export function renderAnnotationDivs({
  * given a node, a pdf "quadPoint" array, which gives the x,y coordinates of each corner of the rectangle,
  * left to right, bottom to top. x and y are measured from the bottom right hand corner of the page.
  *
- * Adjusted for scale.
+ * units are a float between 0 and 1, representing the percentage of the page width and height.
+ *
  * @param {Node} node
  * @returns {Object} [bottomLeftX, bottomLeftY, bottomRightX, bottomRightY, topLeftX, topLeftY, topRightX, topRightY]
  */
-export function nodeToQuadpoint(node, pageDiv, scale = 1) {
+export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
   const nodeRect = getTextNodeBoundingRect(node);
   const pageRect = pageDiv.getBoundingClientRect();
-  const x = nodeRect.left - pageRect.left;
-  const y = pageRect.bottom - nodeRect.bottom;
-  const width = nodeRect.width;
-  const height = nodeRect.height;
+  const raw_x = (nodeRect.left - pageRect.left) / pageRect.width;
+  const raw_y = (pageRect.bottom - nodeRect.bottom) / pageRect.height;
+  const raw_width = nodeRect.width / pageRect.width;
+  const raw_height = nodeRect.height / pageRect.height;
+  const x = raw_x * (maxx - minx) + minx;
+  const y = raw_y * (maxy - miny) + miny;
+  const width = raw_width * (maxx - minx);
+  const height = raw_height * (maxy - miny);
   const quadPoint = [x, y, x + width, y, x, y + height, x + width, y + height];
-  const scaledQuadPoint = quadPoint.map((point) => point / scale);
-  return scaledQuadPoint;
+  return quadPoint;
 }
 
-export function currentSelection() {
+export function currentSelection(doc) {
   const selection = window.getSelection();
   const nodes = selectionToNodes(selection);
   if (nodes.length == 0) return null;
@@ -180,11 +198,22 @@ export function currentSelection() {
   if (pageDiv != endpageDiv) {
     throw new Error("selection spans multiple pages");
   }
-  const quadPoints = nodes.map((node) => nodeToQuadpoint(node, pageDiv, window._pdf._scale));
+
+  const pageNumber = pageDiv.getAttribute("data-page-number");
+  const pageIdx = pageDiv.getAttribute("data-page-number") - 1; //TODO numbering can be weird...
+  const leaf = doc.pages[pageIdx].node;
+  const mediabox = leaf.MediaBox()?.array.map((n) => n.value());
+  const cropbox = leaf.CropBox()?.array.map((n) => n.value());
+
+  const quadPoints = _.flatten(
+    nodes.map((node) => nodeToQuadpoint(node, pageDiv, cropbox || mediabox))
+  );
   return {
     pageDiv,
-    pageNumber: pageDiv.getAttribute("data-page-number"),
-    quadPoints: _.flatten(quadPoints),
+    pageNumber,
+    pageIdx,
+    rect: quadPointArrayToBoundingRect(quadPoints),
+    quadPoints: quadPoints,
     text: selection.getRangeAt(0).toString(),
   };
 }

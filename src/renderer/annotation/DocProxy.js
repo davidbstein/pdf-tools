@@ -25,7 +25,7 @@
  * "Annot" item in the pdf spec:
  *
  * see https://github.com/Hopding/pdf-lib/issues/161
- * see https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf
+ * see https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf#G11.2023455
  *    §12.5.2 - Annotation Dictionaries & §12.5.6.* - Annotation Types
  *
  * Annots entry should be in the page tree, and hold an array of annotation dicts.
@@ -92,25 +92,9 @@ export default class DocProxy {
   }
 
   constructor(data) {
-    //bind
-    this._rootToOutline = this._rootToOutline.bind(this);
-    this.addAnnotation = this.addAnnotation.bind(this);
-    this.createAnnotationItem = this.createAnnotationItem.bind(this);
-    this.createOutline = this.createOutline.bind(this);
-    this.deleteOutline = this.deleteOutline.bind(this);
-    this.getAllIndirectObjects = this.getAllIndirectObjects.bind(this);
-    this.listAnnotations = this.listAnnotations.bind(this);
-    this.listOutlines = this.listOutlines.bind(this);
-    this.listPageRefs = this.listPageRefs.bind(this);
-    this.lookupDict = this.lookupDict.bind(this);
-    this.removeAnnotation = this.removeAnnotation.bind(this);
-    this.updateMaxObjectNumber = this.updateMaxObjectNumber.bind(this);
-    // load
-    this._initializeDocument = this._initializeDocument.bind(this);
-    this._initializeDocument(data);
-  }
-
-  _initializeDocument(data) {
+    const _methods = Object.getOwnPropertyNames(this.__proto__);
+    for (let _method of _methods)
+      this[_method] = _method != "constructor" ? this[_method].bind(this) : 0;
     PDFDocument.load(data).then((doc) => {
       this.doc = doc;
       this.pages = doc.getPages();
@@ -121,18 +105,15 @@ export default class DocProxy {
     return _.toArray(this.doc.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
   }
 
-  lookupDict(refDict) {
-    let obj = this.doc.context.lookup(refDict.ref);
-    if (obj === undefined) console.error(`${refDict.ref} not found`);
-    return PDFObjToDict(obj);
+  lookup(ref) {
+    if (ref.ref) ref = ref.ref;
+    return this.doc.context.lookup(ref);
   }
 
-  listAnnotations() {
-    return this.getAllIndirectObjects().filter(
-      (obj) =>
-        obj["/Type"] === "/Annot" ||
-        obj["/Subtype"]?.indexOf(["/Highlight", "/Underline", "/Link", "/Line"]) > -1
-    );
+  lookupDict(refDict) {
+    let obj = this.lookup(refDict.ref);
+    if (obj === undefined) console.error(`${refDict.ref} not found`);
+    return PDFObjToDict(obj);
   }
 
   listOutlines() {
@@ -289,31 +270,37 @@ export default class DocProxy {
     const buffer = new Uint8Array(size);
   }
 
-  addAnnotation() {
-    //TODO
-  }
-
-  removeAnnotation() {
-    //TODO
-  }
-
-  modifyAnnotation() {
-    //TODO
-  }
-
-  createAnnotationItem(pdfDoc, page, options) {
-    pdfDoc.context.obj({
+  /**
+   * type: Highlight,  Underline,  Squiggly
+   * QuadPoints: [x1, y1, x2, y2, x3, y3, x4, y4 ...]
+   */
+  createHighlight({ pageIdx, color, opacity, quadPoints, rect, type }) {
+    const page = this.pages[pageIdx];
+    const pageRef = page.ref;
+    const pageLeaf = this.lookup(page.ref);
+    const highlightDict = this.doc.context.obj({
       Type: "Annot",
-      Subtype: "Link",
-      Rect: [145, PAGE_HEIGHT / 2 - 5, 358, PAGE_HEIGHT / 2 + 15],
-      Border: [0, 0, 2],
-      C: [0, 0, 1],
-      A: {
-        Type: "Action",
-        S: "URI",
-        URI: PDFString.of("https://github.com/Hopding/pdf-lib"),
-      },
+      Subtype: type,
+      QuadPoints: quadPoints,
+      Rect: [0, 0, 0, 0],
+      C: [color.r / 255, color.g / 255, color.b / 255],
+      CA: opacity,
+      P: pageRef,
+      T: PDFString.of("USERNAME"),
     });
-    const linkAnnotationRef = pdfDoc.context.register(linkAnnotation);
+    const highlightRef = this.doc.context.register(highlightDict);
+    pageLeaf.addAnnot(highlightRef);
+    console.log(highlightRef);
+    console.log(highlightDict.toString());
+    return highlightRef;
   }
+
+  listHighlights() {
+    const highlightTypes = ["/Highlight", "/Underline", "/Squiggly", "/StrikeOut"];
+    return this.getAllIndirectObjects()
+      .filter((a) => highlightTypes.indexOf(a?.["/Subtype"]) >= 0)
+      .map((obj) => obj);
+  }
+
+  removeAnnotation(ref) {}
 }

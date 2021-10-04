@@ -12,14 +12,12 @@ function getUrlParams() {
   window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (str, key, value) {
     params[key] = decodeURIComponent(value);
   });
-  console.log(`[renderer] URL Params: ${JSON.stringify(params)}`);
   return params;
 }
 
 function App() {
   const { filePath, fileType, windowId } = getUrlParams();
   window._WINDOW_ID = windowId;
-  console.log(`[renderer] loading document: ${filePath}`);
   return (
     <div id="container">
       {fileType == "directory" ? <BrowserApp /> : <PdfViewer url={filePath} />}

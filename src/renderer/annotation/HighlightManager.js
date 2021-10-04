@@ -1,68 +1,26 @@
 import _ from "lodash";
-import {
-  selectionToNodes,
-  renderAnnotationDivs,
-  nodeToQuadpoint,
-  getTextNodeBoundingRect,
-  getAncestorWithClass,
-  currentSelection,
-  colorToHex,
-  colorToRGB,
-} from "@/annotation/AnnotationHelpers";
-import AnnotationTypes from "@/annotation/AnnotationTypes";
+import { currentSelection, colorToHex, colorToRGB } from "@/annotation/AnnotationHelpers";
+import { ToolList, ToolTypes } from "@/annotation/AnnotationTypes";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 import DocProxy from "@/annotation/DocProxy";
+import { testOutlineWriter /*testAnnotation*/ } from "@/tests/highlightManagerTests";
 
 const DEFAULTS = {
   clearSelection: false,
-  tool: AnnotationTypes[0],
+  tool: ToolList[0],
 };
 
-function testOutlineWriter(hm) {
-  console.group(`---- running outline writer integration test ----`);
-  const outlines = this.docProxy.listOutlines();
-  console.log("current outlines", outlines);
-  outlines.map((outline) => {
-    hm.docProxy.deleteOutline(outline);
-  });
-  hm.docProxy.createOutline([
-    {
-      title: "testRoot",
-      page: 0,
-      children: [
-        {
-          title: "testChild0",
-          page: 1,
-        },
-        {
-          title: "testChild1",
-          page: 2,
-          children: [
-            {
-              title: "testChild1.1",
-              page: 3,
-              children: [
-                {
-                  title: "testChild1.1.1",
-                  page: [4, { type: "XYZ", args: [null, null, null] }],
-                  children: [],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ]);
-  hm.docProxy.getDocAsBytes();
-  console.log("loading window.d = <PDFDocument object>");
-  window.d = hm.docProxy.doc;
-  console.groupEnd();
+function testAnnotation(hm) {
+  const highlights = hm.docProxy.listHighlights();
+  for (let h of highlights) console.log(h.__obj.toString());
 }
 
 export default class HighlightManager {
   runTests() {
     //testOutlineWriter(this);
+    testAnnotation(this);
+    window.hm = this;
+    window.d = this.docProxy;
   }
 
   constructor(pdfViewer) {
@@ -71,11 +29,12 @@ export default class HighlightManager {
     window.HighlightManager = this;
 
     //bind
-    this.annotateSelection = _.debounce(this.annotateSelection.bind(this), 100, { trailing: true });
-    this.draw = this.draw.bind(this);
-    this.setCurrentTool = this.setCurrentTool.bind(this);
-    this.runTests = this.runTests.bind(this);
-    this._undoListener = this._undoListener.bind(this);
+    const _methods = Object.getOwnPropertyNames(this.__proto__);
+    for (let _method of _methods)
+      this[_method] = _method != "constructor" ? this[_method].bind(this) : 0;
+
+    // decorate
+    this.annotateSelection = _.debounce(this.annotateSelection, 100, { trailing: true });
 
     //instance internals
     this._pdf = pdfViewer;
@@ -102,69 +61,85 @@ export default class HighlightManager {
   async _initializeDocument() {
     const data = await this._pdf._doc.getData();
     this.docProxy = new DocProxy(data);
-    document.addEventListener("mouseup", (e) => {
-      this._pendingSelectionChange ? this.annotateSelection(e) : null;
-    });
+    document.addEventListener("mouseup", this.processMouseUp);
+    document.addEventListener("mousedown", this.processMouseDown);
     document.addEventListener("selectionchange", () => (this._pendingSelectionChange = true));
     document.addEventListener("keypress", this._undoListener);
     this._pdf.listenToPageRender(this._pageRenderListener.bind(this));
   }
 
+  registerToolChangeListener(listener) {
+    const listenerId = _.uniqueId("toolChangeListener");
+    this.toolChangeListeners[listenerId] = listener;
+    return listenerId;
+  }
+
+  unregisterToolChangeListener(listenerId) {
+    delete this.toolChangeListeners[listenerId];
+  }
+
+  _notifyToolChangeListeners() {
+    _.forEach(this.toolChangeListeners, (listener) => {
+      listener(this.currentTool);
+    });
+  }
+
   setCurrentTool(tool) {
     this._initStyleTag();
     this.currentTool = tool;
-    const { name, highlight_color, underline_color, annotation_types, opacity } = tool;
     const rawCSS = `:root { 
-      --highlight-color : ${highlight_color ? colorToHex(highlight_color, opacity) : "transparent"};
+      --highlight-color : ${
+        tool.type == ToolTypes.HIGHLIGHT ? colorToHex(tool.color, tool.opacity) : "transparent"
+      };
       --highlight-text-decoration : ${
-        underline_color
+        tool.type == "Underline"
           ? `underline ${colorToHex(underline_color)} ${colorToHex(underline_thickness) || ""}`
           : "none"
       };
     }`;
     this.styleTag.innerHTML = rawCSS;
+    this._notifyToolChangeListeners();
   }
 
-  annotateSelection(selectionChangeEvent) {
-    this._pendingSelectionChange = false;
+  processMouseDown(e) {
+    console.log(`mouse down ${e.button}`);
+  }
 
-    // only run if there is some selection
-    const _selection = currentSelection();
-    if (_selection == null) return;
-    const { pageDiv, pageNumber, quadPoints, text } = _selection;
-    const pageIdx = pageNumber - 1;
-    let tool = this.currentTool;
-    let color, opacity, opts;
+  processMouseUp(e) {
+    console.log(`mouse up ${e.button}`);
+    // process left mouse button
+    if (e.button == 0) {
+      this._pendingSelectionChange = false;
+      const selection = currentSelection(this.docProxy);
+      if (selection != null) this.annotateSelection(selection, this.docProxy.pages);
+    }
+    //process right mouse button
+    if (e.button == 2) {
+      console.log("right mouse");
+    }
+  }
 
+  annotateSelection(selection) {
     const actions = [];
-    //act
-    if (tool.highlight_color) {
-      color = colorToRGB(tool.highlight_color);
-      opacity = tool.opacity || 0.5;
-      opts = {};
-      actions.push(this.highlight({ pageIdx, color, opacity, quadPoints, opts }));
-    }
-    if (tool.underline_color) {
-      color = colorToRGB(tool.underline_color);
-      opacity = tool.opacity || 1;
-      opts = { thickness: tool.underline_thickness };
-      actions.push(this.underline({ pageIdx, color, opacity, quadPoints, opts }));
-    }
+    actions.push(
+      this.highlight({
+        ...selection,
+        ...this.currentTool,
+      })
+    );
+
     //TODO; add undo info
     this.undoQueue.push(actions);
     this.draw();
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
   }
 
-  highlight({ pageIdx, color, opacity, quadPoints, opts }) {
-    console.log(`highlight ${pageIdx}, ${color}, ${opacity}, ${opts}`);
+  highlight(options) {
+    this.docProxy.createHighlight(options);
   }
 
-  underline({ pageIdx, color, opacity, quadPoints, opts }) {
-    console.log(`underline ${pageIdx}, ${color}, ${opacity}, ${opts}`);
-  }
   draw() {
-    const annotations = this.docProxy.listAnnotations();
+    // TODO: draw unsaved highlights
   }
 
   _initStyleTag() {
