@@ -27,7 +27,7 @@ export function colorToRGB(colorObject) {
     if (_.max(_.values(colorObject)) > 1) {
       return { ...colorObject };
     } else {
-      return _.fromPairs(_.toPairs(colorObject).map(([k, v]) => [k, Math.round(v * 255)]));
+      return { r: colorObject[0] * 255, g: colorObject[1] * 255, b: colorObject[2] * 255 };
     }
   }
   console.error(
@@ -98,21 +98,45 @@ export function getTextNodeBoundingRect(node) {
   return rect;
 }
 
-function quadPointToRect([x1, y1, x2, y2, x3, y3, x4, y4], pageRect) {
-  const x = Math.min(x1, x2, x3, x4);
-  const y = Math.min(y1, y2, y3, y4);
-  const width = Math.max(x1, x2, x3, x4) - x;
-  const height = Math.max(y1, y2, y3, y4) - y;
-  return {
-    bottom: y,
-    top: pageRect.height - y - height,
-    left: x,
-    right: pageRect.width - x - width,
+function quadPointToRect([x1, y1, x2, y2, x3, y3, x4, y4], pageLeaf) {
+  const mediabox = pageLeaf.MediaBox()?.array.map((n) => n.value());
+  const cropbox = pageLeaf.CropBox()?.array.map((n) => n.value());
+  const [xmin, ymin, xmax, ymax] = cropbox || mediabox;
+  const ys = _.sortBy([y1, y2, y3, y4]);
+  const xs = _.sortBy([x1, x2, x3, x4]);
+  const rect = {
+    bottom: (100 * (ys[0] - ymin)) / (ymax - ymin),
+    left: (100 * (xs[0] - xmin)) / (xmax - xmin),
+    top: (100 * (ymax - ys[3])) / (ymax - ymin),
+    right: (100 * (xmax - xs[3])) / (xmax - xmin),
   };
+  return rect;
 }
 
 function quadPointArrayToRects(quadPointArray, pageRect) {
   return _.chunk(quadPointArray, 8).map((quad) => quadPointToRect(quad, pageRect));
+}
+
+export function annotationToDivs(annotationDict, pageLeaf) {
+  if (annotationDict["/Subtype"] != "/Highlight") return [];
+  const divs = [];
+  for (let rect of quadPointArrayToRects(annotationDict["/QuadPoints"], pageLeaf)) {
+    const color = colorToHex(annotationDict["/C"]);
+    const div = document.createElement("div");
+    div.setAttribute("data-annotation-id", `${annotationDict.ref.objectNumber}R`);
+    div.classList = ["highlight-annotation"];
+    div.style.top = `${rect.top}%`;
+    div.style.left = `${rect.left}%`;
+    div.style.bottom = `${rect.bottom}%`;
+    div.style.right = `${rect.right}%`;
+    div.style.backgroundColor = color;
+    div.style.opacity = annotationDict["/CA"];
+    div.onclick = () => {
+      console.log(annotationDict);
+    };
+    divs.push(div);
+  }
+  return divs;
 }
 
 function quadPointArrayToBoundingRect(quadPointArray) {
@@ -131,40 +155,6 @@ function getPageDiv(pageNum) {
     if (page.getAttribute("data-page-number") == pageNum) return page;
   }
 }
-
-export function renderAnnotationDivs({
-  author,
-  border,
-  color,
-  id,
-  object_id,
-  page: pageIdx,
-  opacity,
-  quadPoints,
-}) {
-  const pageNum = pageIdx + 1;
-  const pageDiv = getPageDiv(pageNum);
-  const pageRect = pageDiv.getBoundingClientRect();
-  const rects = quadPointArrayToRects(quadPoints, pageRect);
-  color = colorToRGB(color);
-  return rects.map((rect, idx) => {
-    const div = document.createElement("div");
-    div.classList.add("unsaved-annotation");
-    div.id = `${id}-${idx}`;
-    div.style.background = `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`;
-    div.style.left = `${rect.left}px`;
-    div.style.top = `${rect.top}px`;
-    div.style.bottom = `${rect.bottom}px`;
-    div.style.right = `${rect.right}px`;
-    div.dataset.id = id;
-    div.onclick = (e) => {
-      console.log(e);
-    };
-    pageDiv.prepend(div);
-    return div;
-  });
-}
-
 /**
  * given a node, a pdf "quadPoint" array, which gives the x,y coordinates of each corner of the rectangle,
  * left to right, bottom to top. x and y are measured from the bottom right hand corner of the page.

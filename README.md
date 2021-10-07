@@ -13,53 +13,58 @@ run `npm run dev` in a terminal.
 ## current tasklist:
 
 ### file browser
-  - [x] live file updates
-  - [x] new window opens to view pdf
+
+- [x] live file updates
+- [x] new window opens to view pdf
 
 ### pdf viewer / renderer
+
 - [x] render pdf, dynamic cache of pages not on screen
 
 ### outline
 
-  - BACKEND
-    - [x] read
-    - [x] write 
-    - [ ] OPTIMIZATION merge rather than overwrite
-  - UI
-    - [x] outline view
-    - [x] fast-browse
-    - [ ] live update current on scroll
-    - [ ] outline editing
+- BACKEND
+  - [x] read
+  - [x] write
+  - [ ] OPTIMIZATION merge rather than overwrite
+- UI
+  - [x] outline view
+  - [x] fast-browse
+  - [ ] live update current on scroll
+  - [ ] outline editing
 
 ### highlighting and annotations
 
-  - BACKEND
-    - [ ] backend annotation writer
-    - [ ] backend annotation deleter
-    - [ ] backend annotation merger?
-  - UI
-    - [X] selection detection
-    - [ ] tool picker
-    - [ ] deletion detection / options popup
-    - [ ] comments
+- BACKEND
+  - [x] backend annotation writer
+  - [ ] backend annotation deleter
+  - [ ] backend annotation merger?
+- UI
+  - [x] selection detection
+  - [ ] tool picker
+  - [ ] deletion detection / options popup
+  - [ ] comments
 
 ### PDF metadata / special features.
- - restore zoom, current page, ect.
- - global notes for pdf (ie, homework assignment dates, high-level notes)
+
+- restore zoom, current page, ect.
+- global notes for pdf (ie, homework assignment dates, high-level notes)
 
 ### tests
 
-  - [x] lol, just kidding. manual integration testing 4lyfe
+- [x] lol, just kidding. manual integration testing 4lyfe
 
 ### build process
- - [ ] build to a package
- - [ ] OS iteroperability (windows, linux??)
+
+- [ ] build to a package
+- [ ] OS iteroperability (windows, linux??)
 
 ### features
- - [ ] read config from file
-   - [ ] tool list
-   - [ ] view defaults
- - [ ] bluebook my current highlight.
- - [ ] docx reader? html reader?
- - [ ] finder integration? 
- - [ ] OS hooks?
+
+- [ ] read config from file
+  - [ ] tool list
+  - [ ] view defaults
+- [ ] bluebook my current highlight.
+- [ ] docx reader? html reader?
+- [ ] finder integration?
+- [ ] OS hooks?

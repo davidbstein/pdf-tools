@@ -1,71 +1,166 @@
 import _ from "lodash";
-import { currentSelection, colorToHex, colorToRGB } from "@/annotation/AnnotationHelpers";
+import {
+  currentSelection,
+  colorToHex,
+  colorToRGB,
+  annotationToDivs,
+} from "@/annotation/AnnotationHelpers";
 import { ToolList, ToolTypes } from "@/annotation/AnnotationTypes";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 import DocProxy from "@/annotation/DocProxy";
 import { testOutlineWriter /*testAnnotation*/ } from "@/tests/highlightManagerTests";
 
 const DEFAULTS = {
-  clearSelection: false,
+  clearSelection: true,
   tool: ToolList[0],
 };
 
 function testAnnotation(hm) {
   const highlights = hm.docProxy.listHighlights();
+  console.groupCollapsed("highlights");
   for (let h of highlights) console.log(h.__obj.toString());
+  console.groupEnd();
+}
+
+function runTests(hm) {
+  //testOutlineWriter(this);
+  window.hm = hm;
+  window.d = hm.docProxy;
+  testAnnotation(hm);
 }
 
 export default class HighlightManager {
-  runTests() {
-    //testOutlineWriter(this);
-    testAnnotation(this);
-    window.hm = this;
-    window.d = this.docProxy;
-  }
-
   constructor(pdfViewer) {
-    //singleton initialization
     if (window.HighlightManager) return;
-    window.HighlightManager = this;
+    else window.HighlightManager = this;
 
-    //bind
     const _methods = Object.getOwnPropertyNames(this.__proto__);
-    for (let _method of _methods)
-      this[_method] = _method != "constructor" ? this[_method].bind(this) : 0;
-
-    // decorate
-    this.annotateSelection = _.debounce(this.annotateSelection, 100, { trailing: true });
-
+    for (let _method of _methods) {
+      this[_method] = _method != "constructor" ? this[_method]?.bind(this) : 0;
+    }
     //instance internals
+    _.debounce(this._doAnnotateSelection, 100, { trailing: true });
     this._pdf = pdfViewer;
     this._pendingSelectionChange = false;
     this.highlightDivs = {};
     this.annotationMap = {};
     this.undoQueue = [];
-
+    this.redoQueue = [];
+    this.visiblePages = [];
     // settings and defaults
     this.clearSelection = DEFAULTS.clearSelection;
     this.setCurrentTool(DEFAULTS.tool);
-
     // load
     this._initializeDocument();
-    console.warn(
-      "%cYOU MUST DELETE THIS IT'S FOR TESTING",
-      "color: red",
-      setTimeout(function () {
-        window.HighlightManager.runTests();
-      }, 1000)
-    );
   }
 
   async _initializeDocument() {
     const data = await this._pdf._doc.getData();
-    this.docProxy = new DocProxy(data);
-    document.addEventListener("mouseup", this.processMouseUp);
-    document.addEventListener("mousedown", this.processMouseDown);
+    this.docProxy = await DocProxy.createDocProxy(data);
+    document.addEventListener("mouseup", this._processMouseUp);
+    document.addEventListener("mousedown", this._processMouseDown);
     document.addEventListener("selectionchange", () => (this._pendingSelectionChange = true));
     document.addEventListener("keypress", this._undoListener);
-    this._pdf.listenToPageRender(this._pageRenderListener.bind(this));
+    this._pdf.listenToPageRender(this._detectPageRender);
+    this._pdf.listenToPageChange(this._detectPageChange);
+    console.warn("%cYOU MUST DELETE THIS IT'S FOR TESTING", "color: red", runTests(this));
+  }
+
+  _initStyleTag() {
+    if (!this.styleTag) {
+      this.styleTag = document.createElement("style");
+      this.styleTag.type = "text/css";
+      document.head.appendChild(this.styleTag);
+    }
+    return this.styleTag;
+  }
+
+  _detectPageRender({ pageNumber, ...rest }) {
+    //console.log("page render", pageNumber, rest);
+    this._updatePages();
+    this._drawPage(pageNumber - 1);
+  }
+
+  _detectPageChange({ pageNumber, previous, ...rest }) {
+    console.log(`current page: ${pageNumber}, last page: ${previous}`);
+    this._updatePages();
+  }
+
+  _updatePages() {
+    const visiblePages = _pdf._pdfViewer
+      ._getVisiblePages()
+      .views.map((pageView) => pageView.view.pdfPage._pageIndex);
+    const remaining = _.intersection(this.visiblePages, visiblePages);
+    const toClear = _.difference(this.visiblePages, remaining);
+    const toAdd = _.difference(visiblePages, remaining);
+    this.visiblePages = visiblePages;
+    for (let page of toClear) {
+      this._clearPage(page);
+    }
+    for (let page of toAdd) {
+      this._drawPage(page);
+    }
+  }
+
+  _clearPage(pageIdx) {}
+
+  _drawPage(pageIdx) {
+    const pageDiv = this._pdf._pdfViewer._pages[pageIdx].div;
+    if (pageDiv.getElementsByClassName(`highlight-layer`)[0])
+      pageDiv.getElementsByClassName(`highlight-layer`)[0].remove();
+    const highlightLayer = this._createHighlightLayer(pageIdx);
+    let textLayer;
+    if ((textLayer = pageDiv.getElementsByClassName(`canvasWrapper`)[0]))
+      pageDiv.insertBefore(highlightLayer, textLayer);
+    else pageDiv.appendChild(highlightLayer);
+  }
+
+  _createHighlightLayer(pageIdx) {
+    const highlightLayerDiv = document.createElement("div");
+    highlightLayerDiv.classList = ["highlight-layer"];
+
+    const { highlights, pageLeaf } = this.docProxy.listHighlightsForPageIdx(pageIdx);
+    const toRender = _.flatten(
+      highlights.map((annotation) => annotationToDivs(annotation, pageLeaf))
+    );
+    highlightLayerDiv.append(...toRender);
+    return highlightLayerDiv;
+  }
+
+  _detectUndo(e) {
+    if (e.key == "z" && e.ctrlKey) {
+      if (this.undoQueue.length === 0) return;
+      const annotation = this.undoQueue.pop();
+      annotation.is_deleted = true;
+    }
+  }
+
+  _processMouseDown(e) {
+    //console.log(`mouse down ${e.button}`);
+  }
+
+  _processMouseUp(e) {
+    console.log(`mouse up ${e.button}`);
+    // process left mouse button
+    if (e.button == 0) {
+      this._pendingSelectionChange = false;
+      const selection = currentSelection(this.docProxy);
+      if (selection != null) this._doAnnotateSelection(selection);
+    }
+    //process right mouse button
+    if (e.button == 2) {
+      console.log("right mouse");
+    }
+  }
+
+  _doAnnotateSelection(selection) {
+    const action = this.docProxy.createHighlight({ ...selection, ...this.currentTool });
+
+    this.undoQueue.push(action);
+    this.redoQueue = [];
+    this.clearSelection ? document.getSelection().removeAllRanges() : null;
+    this._pdf.autoSave();
+    this._drawPage(action.pageIdx);
   }
 
   registerToolChangeListener(listener) {
@@ -74,11 +169,15 @@ export default class HighlightManager {
     return listenerId;
   }
 
+  async getPDFBytes(options) {
+    return await this.docProxy.getDocAsBytes();
+  }
+
   unregisterToolChangeListener(listenerId) {
     delete this.toolChangeListeners[listenerId];
   }
 
-  _notifyToolChangeListeners() {
+  notifyToolChangeListeners() {
     _.forEach(this.toolChangeListeners, (listener) => {
       listener(this.currentTool);
     });
@@ -98,73 +197,22 @@ export default class HighlightManager {
       };
     }`;
     this.styleTag.innerHTML = rawCSS;
-    this._notifyToolChangeListeners();
+    this.notifyToolChangeListeners();
   }
 
-  processMouseDown(e) {
-    console.log(`mouse down ${e.button}`);
+  getCurrentTool() {
+    return this._currentTool;
   }
 
-  processMouseUp(e) {
-    console.log(`mouse up ${e.button}`);
-    // process left mouse button
-    if (e.button == 0) {
-      this._pendingSelectionChange = false;
-      const selection = currentSelection(this.docProxy);
-      if (selection != null) this.annotateSelection(selection, this.docProxy.pages);
-    }
-    //process right mouse button
-    if (e.button == 2) {
-      console.log("right mouse");
-    }
+  redo() {
+    const action = this.redoQueue.pop();
+    action.redoFn();
+    this.redoQueue = [];
   }
 
-  annotateSelection(selection) {
-    const actions = [];
-    actions.push(
-      this.highlight({
-        ...selection,
-        ...this.currentTool,
-      })
-    );
-
-    //TODO; add undo info
-    this.undoQueue.push(actions);
-    this.draw();
-    this.clearSelection ? document.getSelection().removeAllRanges() : null;
-  }
-
-  highlight(options) {
-    this.docProxy.createHighlight(options);
-  }
-
-  draw() {
-    // TODO: draw unsaved highlights
-  }
-
-  _initStyleTag() {
-    if (!this.styleTag) {
-      this.styleTag = document.createElement("style");
-      this.styleTag.type = "text/css";
-      document.head.appendChild(this.styleTag);
-    }
-    return this.styleTag;
-  }
-
-  _undoListener(e) {
-    if (e.key == "z" && e.ctrlKey) {
-      if (this.undoQueue.length === 0) return;
-      const annotation = this.undoQueue.pop();
-      annotation.is_deleted = true;
-      this.draw();
-    }
-  }
-
-  async getPDFBytes(options) {
-    return await this.docProxy.getDocAsBytes();
-  }
-
-  _pageRenderListener({ pageNumber, source }) {
-    //console.log("page render", pageNumber, source);
+  undo() {
+    const action = this.undoQueue.pop();
+    action.undoFn();
+    this.redoQueue.push(action);
   }
 }

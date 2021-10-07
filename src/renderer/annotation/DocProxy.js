@@ -85,24 +85,17 @@ function PDFObjToDict(pdfObj) {
 }
 
 export default class DocProxy {
-  //debug tool
-  PDFObjToList(pdfObj) {
-    let obj = PDFObjToDict(pdfObj);
-    return [obj?.["/Type"], obj?.["/Subtype"], obj];
+  static async createDocProxy(data) {
+    const doc = await PDFDocument.load(data);
+    return new DocProxy(doc);
   }
 
-  constructor(data) {
+  constructor(doc) {
     const _methods = Object.getOwnPropertyNames(this.__proto__);
     for (let _method of _methods)
       this[_method] = _method != "constructor" ? this[_method].bind(this) : 0;
-    PDFDocument.load(data).then((doc) => {
-      this.doc = doc;
-      this.pages = doc.getPages();
-    });
-  }
-
-  getAllIndirectObjects() {
-    return _.toArray(this.doc.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
+    this.doc = doc;
+    this.pages = doc.getPages();
   }
 
   lookup(ref) {
@@ -116,8 +109,12 @@ export default class DocProxy {
     return PDFObjToDict(obj);
   }
 
+  listIndirectObjects() {
+    return _.toArray(this.doc.context.indirectObjects.entries()).map(([_, e]) => PDFObjToDict(e));
+  }
+
   listOutlines() {
-    return this.getAllIndirectObjects()
+    return this.listIndirectObjects()
       .filter(
         (obj) =>
           obj["/Type"] === "/Outlines" ||
@@ -127,7 +124,7 @@ export default class DocProxy {
   }
 
   listPageRefs() {
-    return [this.pages.map((page) => this.doc.context.getObjectRef(page.__obj))];
+    return this.pages.map((page) => page.ref);
   }
 
   _rootToOutline(node, parent) {
@@ -274,7 +271,7 @@ export default class DocProxy {
    * type: Highlight,  Underline,  Squiggly
    * QuadPoints: [x1, y1, x2, y2, x3, y3, x4, y4 ...]
    */
-  createHighlight({ pageIdx, color, opacity, quadPoints, rect, type }) {
+  createHighlight({ pageIdx, color, opacity, quadPoints, rect = [0, 0, 0, 0], type }) {
     const page = this.pages[pageIdx];
     const pageRef = page.ref;
     const pageLeaf = this.lookup(page.ref);
@@ -282,25 +279,64 @@ export default class DocProxy {
       Type: "Annot",
       Subtype: type,
       QuadPoints: quadPoints,
-      Rect: [0, 0, 0, 0],
+      Rect: rect,
       C: [color.r / 255, color.g / 255, color.b / 255],
       CA: opacity,
       P: pageRef,
-      T: PDFString.of("USERNAME"),
+      T: PDFString.of("highlight 'user'"),
     });
     const highlightRef = this.doc.context.register(highlightDict);
     pageLeaf.addAnnot(highlightRef);
-    console.log(highlightRef);
-    console.log(highlightDict.toString());
-    return highlightRef;
+    return {
+      ref: highlightRef,
+      undoFn: () => {
+        this.doc.context.delete(highlightRef);
+      },
+      redoFn: () => {
+        const highlightRef = this.doc.context.register(highlightDict);
+        pageLeaf.addAnnot(highlightRef);
+      },
+      pageIdx: pageIdx,
+    };
+  }
+
+  removeAnnotation(ref) {
+    const pageLeaf = this.lookup(ref.get("P"));
+    const highlightDict = this.lookup(ref);
+    const pageIdx = _.indexOf(
+      this.pages.map((p) => p.ref),
+      pageLeaf.ref
+    );
+    return {
+      undoFn: () => {
+        this.doc.context.delete(ref);
+      },
+      redoFn: () => {
+        const highlightRef = this.doc.context.register(highlightDict);
+        pageLeaf.addAnnot(highlightRef);
+      },
+      pageIdx,
+    };
+  }
+
+  listHighlightsForPageIdx(pageIdx) {
+    const page = this.pages[pageIdx];
+    const pageRef = page.ref;
+    const pageLeaf = this.lookup(page.ref);
+    const highlights = pageLeaf.Annots()?.array.map((ref) => ({
+      ...PDFObjToDict(this.lookup(ref)),
+      ref,
+    }));
+    return {
+      highlights: highlights || [],
+      pageLeaf: pageLeaf,
+    };
   }
 
   listHighlights() {
     const highlightTypes = ["/Highlight", "/Underline", "/Squiggly", "/StrikeOut"];
-    return this.getAllIndirectObjects()
+    return this.listIndirectObjects()
       .filter((a) => highlightTypes.indexOf(a?.["/Subtype"]) >= 0)
       .map((obj) => obj);
   }
-
-  removeAnnotation(ref) {}
 }
