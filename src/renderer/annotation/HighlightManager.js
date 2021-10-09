@@ -50,12 +50,9 @@ export default class HighlightManager {
     // settings and defaults
     this.clearSelection = DEFAULTS.clearSelection;
     this.setCurrentTool(DEFAULTS.tool);
-    // load
-    this._initializeDocument();
   }
 
-  async _initializeDocument() {
-    const data = await this._pdf._doc.getData();
+  async _initializeDocument(data) {
     this.docProxy = await DocProxy.createDocProxy(data);
     document.addEventListener("mouseup", this._processMouseUp);
     document.addEventListener("mousedown", this._processMouseDown);

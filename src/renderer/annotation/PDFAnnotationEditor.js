@@ -13,15 +13,14 @@ export default class PDFAnnotationEditor {
     this._pdfViewer = new PDFJSViewer.PDFViewer({
       container: container,
       eventBus: this._eventBus,
-      renderer: "svg",
+      renderer: "canvas",
     });
     const fpath = path.parse(fileLocation);
     this._fileLocation = fileLocation;
     this._tempFileLocation = path.format({
       ...fpath,
-      base: `~${fpath.name}(${new Date().toISOString()}).${fpath.ext}`,
+      base: `~${fpath.name}(${/*new Date().toISOString()*/ "-"}).${fpath.ext}`,
     });
-
     // bind
     window._pdf = this;
     this.listenToScroll = _.debounce(this.listenToScroll, 500, { leading: false, trailing: true });
@@ -29,17 +28,18 @@ export default class PDFAnnotationEditor {
     this._saveListener = this._saveListener.bind(this);
 
     // load
-    console.log("test");
-    fs.copyFileSync(fileLocation, this._tempFileLocation);
-    getDocument(fs.readFileSync(this._tempFileLocation).buffer).promise.then(
-      (doc) => {
-        this._pdfViewer.setDocument(doc);
-        this._doc = doc;
-        this._highlightManager = new HighlightManager(this);
-        document.addEventListener("keypress", this._saveListener);
-      },
-      (error) => console.error(`Could not load ${fileLocation} ERROR: ${error}`)
-    );
+    this._initialize();
+  }
+
+  async _initialize() {
+    fs.copyFile(this._fileLocation, this._tempFileLocation, () => {});
+    const filebuffer = fs.readFileSync(this._fileLocation).buffer;
+    this._highlightManager = new HighlightManager(this);
+    await this._highlightManager._initializeDocument(filebuffer);
+    const doc = await getDocument(await this._highlightManager.getPDFBytes()).promise;
+    this._doc = doc;
+    this._pdfViewer.setDocument(doc);
+    document.addEventListener("keypress", this._saveListener);
   }
 
   async redrawPage(pageIdx) {

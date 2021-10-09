@@ -1,5 +1,6 @@
 import _ from "lodash";
 import fs from "fs";
+import { HighlightAnnotation } from "pdfjs-dist/build/pdf.worker";
 
 /**
  * given a color of one of the following formats: {r: [0-255], g: [0-255], b: [0-255]};  {r: [0-1], g: [0-1], b: [0-1]}; #RRGGBB; or #RGB
