@@ -4,7 +4,7 @@
  * color: [{r,g,b} | #rrggbb] - the color of the marker, [0-1]
  * type: Highlight | Underline | Squiggly | Strikeout | Link | FreeText | Popup | Line
  */
-import { colorToRGB } from "./AnnotationHelpers";
+import { colorToRGB, colorToHex } from "./AnnotationHelpers";
 
 export const ToolTypes = {
   HIGHLIGHT: "Highlight",
@@ -19,39 +19,39 @@ export const ToolTypes = {
 
 export const ToolList = [
   {
-    name: "Factual Content",
+    name: "Facts",
     color: "#fffab9",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Legal Reasoning",
+    name: "Legal",
     color: "#fdd9a8",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Rejected or Dissenting Reasoning",
+    name: "Dissent",
     color: "#fedbd8",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
     name: "Disposition",
     color: "#ccefff",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Procedural Posture",
+    name: "Procedure",
     color: "#f0caff",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Concurrences / Likely Dicta / Important Case Cites",
+    name: "Concurrences / Cites",
     color: "#deeed4",
-    opacity: 0.25,
+    opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
@@ -70,5 +70,6 @@ export const ToolList = [
   return {
     ...annotationType,
     color: colorToRGB(annotationType.color),
+    colorHex: colorToHex(annotationType.color),
   };
 });

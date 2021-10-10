@@ -119,7 +119,7 @@ function quadPointArrayToRects(quadPointArray, pageRect) {
 }
 
 export function annotationToDivs(annotationDict, pageLeaf) {
-  if (annotationDict["/Subtype"] != "/Highlight") return [];
+  if (["/Highlight", "/Underline"].indexOf(annotationDict["/Subtype"]) < 0) return [];
   const divs = [];
   for (let rect of quadPointArrayToRects(annotationDict["/QuadPoints"], pageLeaf)) {
     const color = colorToHex(annotationDict["/C"]);
@@ -130,7 +130,13 @@ export function annotationToDivs(annotationDict, pageLeaf) {
     div.style.left = `${rect.left}%`;
     div.style.bottom = `${rect.bottom}%`;
     div.style.right = `${rect.right}%`;
-    div.style.backgroundColor = color;
+    if (annotationDict["/Subtype"] === "/Highlight") {
+      div.style.backgroundColor = color;
+    }
+    if (annotationDict["/Subtype"] === "/Underline") {
+      div.style.borderBottom = `2px solid ${color}`;
+      div.style.backgroundColor = "transparent";
+    }
     div.style.opacity = annotationDict["/CA"];
     div.onclick = () => {
       console.log(annotationDict);

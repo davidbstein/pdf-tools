@@ -189,11 +189,13 @@ export default class HighlightManager {
     this.currentTool = tool;
     const rawCSS = `:root { 
       --highlight-color : ${
-        tool.type == ToolTypes.HIGHLIGHT ? colorToHex(tool.color, tool.opacity) : "transparent"
+        tool.type == ToolTypes.HIGHLIGHT
+          ? colorToHex(tool.color, tool.opacity)
+          : colorToHex(tool.color, 0.2)
       };
       --highlight-text-decoration : ${
         tool.type == "Underline"
-          ? `underline ${colorToHex(underline_color)} ${colorToHex(underline_thickness) || ""}`
+          ? `underline ${tool.underline_thickness || "2px"} ${tool.colorHex}22`
           : "none"
       };
     }`;

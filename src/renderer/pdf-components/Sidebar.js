@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import _ from "lodash";
 import "@/css/pdf-sidebar.scss";
+import { ResizeGrip } from "@/components/ResizablePanel";
 
 /**
  * an outline is a list of nodes.
@@ -79,13 +80,20 @@ export default class Sidebar extends Component {
     window._pdf.getOutline((outline) => {
       this.setState({ outline });
     });
+    this.resize = this.resize.bind(this);
   }
+
+  resize(e) {
+    this.props.resize(e.x);
+  }
+
   render() {
     return (
       <div id="Sidebar">
         <div id="OutlineView">
           <Outline outline={this.state.outline} />
         </div>
+        <ResizeGrip resize={this.resize} />
       </div>
     );
   }

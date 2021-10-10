@@ -1,0 +1,18 @@
+#Sidebar {
+  position: fixed;
+  top: var(--toolbar-height);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background-color: #eee;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+  .resize-grip {
+    width: var(--resize-grip-width);
+    top: 0;
+    bottom: 0;
+    right: 0;
+    cursor: ew-resize;
+  }
+}

@@ -1,0 +1,98 @@
+#Viewer {
+  background-color: #444;
+  position: fixed;
+  top: var(--toolbar-height);
+  bottom: var(--statusbar-height);
+  left: var(--sidebar-width);
+  right: var(--annotationbar-width);
+  max-width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  .highlight-layer {
+    z-index: 1;
+  }
+  .canvasWrapper {
+    z-index: 2;
+  }
+  .textLayer {
+    z-index: 3;
+  }
+  &.show-text-layer {
+    .textLayer span,
+    .textLayer br {
+      background-color: white;
+      color: black;
+      opacity: 0.7;
+    }
+  }
+  .textLayer > span {
+    color: default;
+  }
+  #pdfViewer {
+    --gap-size: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    align-content: flex-start;
+    gap: var(--gap-size);
+    padding: var(--gap-size);
+    background-color: grey;
+
+    .page {
+      margin: 0 0 0 0; /*hi */
+      border-image: none;
+      border: none;
+      box-shadow: 0 0 6px 0 black;
+      display: block;
+      position: relative;
+      background: rgba(255, 255, 255, 0.5);
+      background-color: white;
+      .unsaved-annotation {
+        position: absolute;
+        content: "";
+      }
+
+      .canvasWrapper {
+      }
+
+      .textLayer {
+        opacity: 1;
+        span {
+          text-decoration: underline 1px #00000000;
+        }
+        &::selection, /* needed to overload Mozilla's defaults*/
+        span::selection {
+          background: var(--highlight-color);
+          background-color: var(--highlight-color);
+          border: 1px solid red;
+          //color: black;
+          opacity: var(--highlight-opacity);
+        }
+      }
+      .annotationLayer {
+        display: none;
+      }
+      .highlight-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        // display: none;
+        .highlight-annotation {
+          position: absolute;
+          opacity: 50%;
+          background-color: rgb(255, 255, 209);
+          &:hover {
+            border-width: 1px;
+            border-color: rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+    }
+    section.highlightAnnotation {
+      pointer-events: none;
+    }
+  }
+}

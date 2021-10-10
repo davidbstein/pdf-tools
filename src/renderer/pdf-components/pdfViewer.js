@@ -17,7 +17,7 @@ export default class PdfViewer extends Component {
       toolbar_height: 44,
       sidebar_width: 200,
       statusbar_height: 22,
-      annotationbar_width: 44,
+      annotationbar_width: 150,
       pdf_ready: false,
     };
     this.displayScaleChanged = this.displayScaleChanged.bind(this);
@@ -81,7 +81,7 @@ export default class PdfViewer extends Component {
         </style>
         {this.state.pdf_ready ? (
           <div>
-            <Toolbar scale={this.state.scale} resize={this.resizeToolbar} />
+            <Toolbar resize={this.resizeToolbar} />
             <Sidebar resize={this.resizeSidebar} />
             <Statusbar resize={this.resizeStatusbar} />
             <Annotationbar resize={this.resizeAnnotationbar} />

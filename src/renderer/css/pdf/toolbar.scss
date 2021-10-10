@@ -1,0 +1,19 @@
+#Toolbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--toolbar-height);
+  background-color: var(--toolbar-bg-color);
+  color: var(--toolbar-fg-color);
+  border-bottom: 1px solid var(--toolbar-fg-color);
+  box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  .resize-grip {
+    height: var(--resize-grip-width);
+    bottom: 0;
+    right: 0;
+    left: 0;
+    cursor: ns-resize;
+  }
+}
