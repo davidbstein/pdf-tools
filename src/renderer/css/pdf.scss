@@ -107,7 +107,7 @@
       display: block;
       position: relative;
       background: rgba(255, 255, 255, 0.5);
-
+      background-color: white;
       .unsaved-annotation {
         position: absolute;
         content: "";
@@ -118,6 +118,10 @@
 
       .textLayer {
         opacity: 1;
+        // span {
+        //   color: black;
+        //   background: white;
+        // }
       }
 
       .textLayer ::selection, /* needed to overload Mozilla's defaults*/
@@ -138,7 +142,7 @@
         bottom: 0;
         right: 0;
         border: 1px solid red;
-        display: hidden;
+        // display: none;
         .highlight-annotation {
           position: absolute;
           opacity: 50%;

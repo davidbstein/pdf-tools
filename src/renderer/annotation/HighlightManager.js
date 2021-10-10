@@ -170,6 +170,10 @@ export default class HighlightManager {
     return await this.docProxy.getDocAsBytes();
   }
 
+  async getPDFBytesNoAnnots(options) {
+    return await this.docProxy.getDocAsBytesNoAnnots();
+  }
+
   unregisterToolChangeListener(listenerId) {
     delete this.toolChangeListeners[listenerId];
   }

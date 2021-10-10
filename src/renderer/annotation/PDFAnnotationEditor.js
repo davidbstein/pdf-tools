@@ -13,8 +13,10 @@ export default class PDFAnnotationEditor {
     this._pdfViewer = new PDFJSViewer.PDFViewer({
       container: container,
       eventBus: this._eventBus,
-      renderer: "canvas",
+      renderer: "svg" || "canvas",
+      annotationMode: 0,
     });
+    this._pdfViewer._buffer.resize(150);
     const fpath = path.parse(fileLocation);
     this._fileLocation = fileLocation;
     this._tempFileLocation = path.format({
@@ -28,6 +30,9 @@ export default class PDFAnnotationEditor {
     this._saveListener = this._saveListener.bind(this);
 
     // load
+    this.listenToAnnotationRender(() => {
+      console.log("[SteinPdfViewer] annotation layer rendered");
+    });
     this._initialize();
   }
 
@@ -39,6 +44,10 @@ export default class PDFAnnotationEditor {
     const doc = await getDocument(await this._highlightManager.getPDFBytes()).promise;
     this._doc = doc;
     this._pdfViewer.setDocument(doc);
+    const tempRAL = PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer;
+    PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer = function () {
+      console.log("[SteinPdfViewer] annotate");
+    };
     document.addEventListener("keypress", this._saveListener);
   }
 
@@ -76,6 +85,10 @@ export default class PDFAnnotationEditor {
 
   listenToScroll(callback) {
     this._eventBus.on("updateviewarea", callback);
+  }
+
+  listenToAnnotationRender(callback) {
+    this._eventBus.on("annotationlayerrendered", callback);
   }
 
   async autoSave() {

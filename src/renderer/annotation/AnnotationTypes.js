@@ -19,12 +19,6 @@ export const ToolTypes = {
 
 export const ToolList = [
   {
-    name: "TEST COLOR",
-    color: "#cc3388",
-    opacity: 0.25,
-    type: ToolTypes.HIGHLIGHT,
-  },
-  {
     name: "Factual Content",
     color: "#fffab9",
     opacity: 0.25,

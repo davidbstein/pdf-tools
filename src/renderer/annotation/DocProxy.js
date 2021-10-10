@@ -261,6 +261,10 @@ export default class DocProxy {
     return await this.doc.save({ useObjectStreams: false });
   }
 
+  async getDocAsBytes(options) {
+    return await this.doc.save({ useObjectStreams: false });
+  }
+
   async genPDF() {
     await this.doc.flush();
     let offset = 0;
@@ -307,13 +311,15 @@ export default class DocProxy {
       this.pages.map((p) => p.ref),
       pageLeaf.ref
     );
+    const holder = { ref: ref };
     return {
-      undoFn: () => {
-        this.doc.context.delete(ref);
-      },
       redoFn: () => {
-        const highlightRef = this.doc.context.register(highlightDict);
-        pageLeaf.addAnnot(highlightRef);
+        this.doc.context.delete(holder.ref);
+        pageLeaf.removeAnnotation(holder.ref);
+      },
+      undoFn: () => {
+        holder.ref = this.doc.context.register(highlightDict);
+        pageLeaf.addAnnot(holder.ref);
       },
       pageIdx,
     };
