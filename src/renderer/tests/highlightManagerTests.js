@@ -39,3 +39,10 @@ export function testOutlineWriter(hm) {
   window.d = hm.docProxy.doc;
   console.groupEnd();
 }
+
+function testAnnotation(hm) {
+  const highlights = hm.docProxy.listHighlights();
+  console.groupCollapsed("highlights");
+  for (let h of highlights) logger.log(h.__obj.toString());
+  console.groupEnd();
+}

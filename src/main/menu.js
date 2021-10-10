@@ -1,15 +1,14 @@
 import { Menu } from "electron";
 
-export default function generateMenu(app, callbacks) {
+export default function generateMenu(app, callbacks, genericCallback) {
   function doCallback(command, args) {
     console.log(
       `== menu command intercepted: ${command}. ${
         callbacks[command] ? "Handler available" : "NOT HANDLED"
       } ==`
     );
-    if (callbacks[command]) {
-      callbacks[command]({ application: args[0], menu: args[1], event: args[2] });
-    }
+    const callback = callbacks[command] ? callbacks[command] : genericCallback;
+    callback({ application: args[0], menu: args[1], event: args[2], command });
   }
   const TEMPLATE = [
     {

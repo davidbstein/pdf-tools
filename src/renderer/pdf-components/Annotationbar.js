@@ -9,14 +9,14 @@ export default class AnnotationBar extends Component {
       currentTool: ToolList[0],
     };
     this.resize = this.resize.bind(this);
-    this.toolChange = this.toolChange.bind(this);
+    this._toolChangeListener = this._toolChangeListener.bind(this);
+    addEventListener("pdf-tool-change", this._toolChangeListener);
   }
   resize(e) {
     this.props.resize(window.innerWidth - e.x);
   }
-  toolChange(tool) {
-    window.HighlightManager.setCurrentTool(tool);
-    this.setState({ currentTool: tool });
+  _toolChangeListener({ detail }) {
+    this.setState({ currentTool: detail.tool });
   }
   render() {
     return (
@@ -26,7 +26,7 @@ export default class AnnotationBar extends Component {
             <div
               key={index}
               className={`tool selected-${this.state.currentTool.name == tool.name}`}
-              onClick={() => this.toolChange(tool)}
+              onClick={() => window.HighlightManager.setCurrentTool(tool)}
             >
               <div className={`tool-icon tool-${tool.type}`}>
                 <div

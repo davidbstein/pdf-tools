@@ -17,16 +17,49 @@
   .textLayer {
     z-index: 3;
   }
-  &.show-text-layer {
-    .textLayer span,
-    .textLayer br {
-      background-color: white;
-      color: black;
-      opacity: 0.7;
+  .mouse-follower-popup {
+    --tool-option-item-width: 20px;
+    --tool-option-item-margin: 4px;
+    border: 1px solid black;
+    background-color: grey;
+    z-index: 100;
+    position: fixed;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    width: calc(3 * (2px + var(--tool-option-item-width) + 2 * var(--tool-option-item-margin)));
+    opacity: 0.6;
+    box-shadow: 0px 0px 1px 1px grey;
+    .tool-option {
+      padding: var(--tool-option-item-margin);
+      .tool-option-icon {
+        width: var(--tool-option-item-width);
+        height: var(--tool-option-item-width);
+        position: relative;
+        border: 1px solid black;
+        cursor: pointer;
+        .tool-option-popup {
+          display: none;
+        }
+      }
+      &:hover {
+        background-color: rgb(177, 177, 177);
+        .tool-option-popup {
+          display: block;
+          display: none;
+          background-color: white;
+          position: absolute;
+          border: 1px solid black;
+          top: var(--tool-option-item-width);
+          left: var(--tool-option-item-width);
+          white-space: nowrap;
+          z-index: 101;
+        }
+      }
     }
-  }
-  .textLayer > span {
-    color: default;
   }
   #pdfViewer {
     --gap-size: 10px;
@@ -48,6 +81,7 @@
       position: relative;
       background: rgba(255, 255, 255, 0.5);
       background-color: white;
+      overflow: hidden;
       .unsaved-annotation {
         position: absolute;
         content: "";
@@ -56,8 +90,17 @@
       .canvasWrapper {
       }
 
+      &.show-text-layer {
+        .textLayer span,
+        .textLayer br {
+          background-color: white;
+          color: black;
+          opacity: 0.7;
+        }
+      }
       .textLayer {
         opacity: 1;
+        cursor: text;
         span {
           text-decoration: underline 1px #00000000;
         }
@@ -66,7 +109,7 @@
           background: var(--highlight-color);
           background-color: var(--highlight-color);
           border: 1px solid red;
-          //color: black;
+          color: rgba(110, 57, 57, 0.1);
           opacity: var(--highlight-opacity);
         }
       }

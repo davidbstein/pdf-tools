@@ -289,39 +289,54 @@ export default class DocProxy {
       P: pageRef,
       T: PDFString.of("highlight 'user'"),
     });
-    const highlightRef = this.doc.context.register(highlightDict);
-    pageLeaf.addAnnot(highlightRef);
+    return this.addAnnotation(highlightDict);
+  }
+
+  createAnnotationFunctions(highlightDict, ref) {
+    const pageRef = highlightDict.dict.get(PDFName.of("P"));
+    const pageLeaf = this.lookup(pageRef);
+    const pageIdx = _.indexOf(
+      this.pages.map((p) => p.ref.tag),
+      pageRef.tag
+    );
+    const params = {
+      ref,
+      pageIdx,
+    };
+    console.log(params, pageLeaf.ref, pageRef);
     return {
-      ref: highlightRef,
-      undoFn: () => {
-        this.doc.context.delete(highlightRef);
+      removeFn: () => {
+        console.log("remove highlight");
+        this.doc.context.delete(params.ref);
+        params.ref = null;
       },
-      redoFn: () => {
+      addFn: () => {
+        console.log("add highlight");
         const highlightRef = this.doc.context.register(highlightDict);
+        params.ref = highlightRef;
         pageLeaf.addAnnot(highlightRef);
       },
-      pageIdx: pageIdx,
+      params: params,
+    };
+  }
+
+  addAnnotation(highlightDict) {
+    const annotationFunctions = this.createAnnotationFunctions(highlightDict);
+    console.log(annotationFunctions);
+    return {
+      undoFn: annotationFunctions.removeFn,
+      redoFn: annotationFunctions.addFn,
+      params: annotationFunctions.params,
     };
   }
 
   removeAnnotation(ref) {
-    const pageLeaf = this.lookup(ref.get("P"));
     const highlightDict = this.lookup(ref);
-    const pageIdx = _.indexOf(
-      this.pages.map((p) => p.ref),
-      pageLeaf.ref
-    );
-    const holder = { ref: ref };
+    const annotationFunctions = this.createAnnotationFunctions(highlightDict, ref);
     return {
-      redoFn: () => {
-        this.doc.context.delete(holder.ref);
-        pageLeaf.removeAnnotation(holder.ref);
-      },
-      undoFn: () => {
-        holder.ref = this.doc.context.register(highlightDict);
-        pageLeaf.addAnnot(holder.ref);
-      },
-      pageIdx,
+      undoFn: annotationFunctions.addFn,
+      redoFn: annotationFunctions.removeFn,
+      params: annotationFunctions.params,
     };
   }
 

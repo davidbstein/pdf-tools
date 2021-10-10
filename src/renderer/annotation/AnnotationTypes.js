@@ -55,13 +55,13 @@ export const ToolList = [
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Section Underline",
+    name: "Section ",
     color: "#000000",
     type: ToolTypes.UNDERLINE,
     underline_thickness: "2px",
   },
   {
-    name: "Case Name Underline",
+    name: "Case Name",
     color: "#669c34",
     type: ToolTypes.UNDERLINE,
     underline_thickness: "1px",

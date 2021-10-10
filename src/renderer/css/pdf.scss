@@ -1,7 +1,7 @@
 :root {
   --toolbar-bg-color: #444;
   --toolbar-fg-color: #eee;
-  --resize-grip-width: 4px;
+  --resize-grip-width: 2px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -18,7 +18,7 @@
 @import "./pdf/viewer.scss";
 
 .resize-grip {
-  border: 1px solid red;
+  border: 1px solid #999;
   background-color: #ccc;
   position: absolute;
 }

@@ -88,3 +88,8 @@ export function createPDFWindow({ filePath, debug = IS_DEVELOPMENT }) {
   if (debug) newWindow.webContents.openDevTools();
   return newWindow;
 }
+
+export function sendMessageToActiveWindow(channel, message) {
+  const activeWindow = BrowserWindow.getFocusedWindow();
+  if (activeWindow) activeWindow.webContents.send(channel, message);
+}

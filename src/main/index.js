@@ -7,6 +7,7 @@ import {
   getWindowRefs,
   getCurrentPath,
   setCurrentPath,
+  sendMessageToActiveWindow,
 } from "./windowManagement";
 import os from "os";
 
@@ -72,21 +73,27 @@ ipcMain.on("openFile", (event, { target, _id }) => {
 
 function initializeMenu() {
   Menu.setApplicationMenu(
-    generateMenu(app, {
-      Open: ({ application, menu, event }) => {
-        console.log("OPEN FILE CLICKED", { application, menu, event });
-        const fileName = dialog.showOpenDialogSync(window, {
-          properties: ["openFile"],
-        });
-        console.log(fileName);
+    generateMenu(
+      app,
+      {
+        Open: ({ application, menu, event }) => {
+          console.log("OPEN FILE CLICKED", { application, menu, event });
+          const fileName = dialog.showOpenDialogSync(window, {
+            properties: ["openFile"],
+          });
+          console.log(fileName);
+        },
+        Save: ({ application, menu, event }) => {
+          console.log("SAVE FILE CLICKED", { application, menu, event });
+        },
+        Close: ({ application, menu, event }) => {
+          console.log("CLOSE FILE CLICKED", { application, menu, event });
+        },
       },
-      Save: ({ application, menu, event }) => {
-        console.log("SAVE FILE CLICKED", { application, menu, event });
-      },
-      Close: ({ application, menu, event }) => {
-        console.log("CLOSE FILE CLICKED", { application, menu, event });
-      },
-      Undo: ({ application, menu, event }) => {},
-    })
+      ({ command, application, menu, event }) => {
+        console.log("MENU CLICKED", { command, event });
+        sendMessageToActiveWindow("menu-clicked", { command });
+      }
+    )
   );
 }

@@ -24,10 +24,6 @@
     &:hover {
       background-color: #888;
     }
-    .tool-preview {
-      width: 100%;
-      height: 100%;
-    }
     .tool-icon {
       margin-right: 4px;
       display: inline-block;
@@ -36,8 +32,28 @@
       border: 1px solid black;
       background: white;
       cursor: pointer;
-      .tool-highlight {
+      position: relative;
+      .tool-preview {
+        width: 100%;
+        height: 100%;
+      }
+      &.tool-highlight {
         background-color: white;
+      }
+      &.tool-Underline {
+        &::before {
+          content: "a";
+          position: absolute;
+          bottom: 0px;
+          color: black;
+          font-size: 18px;
+          left: 5px;
+        }
+        .tool-preview {
+          height: 3px;
+          bottom: 2px;
+          position: absolute;
+        }
       }
     }
     .tool-name {
