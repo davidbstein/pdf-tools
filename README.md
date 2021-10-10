@@ -41,7 +41,7 @@ run `npm run dev` in a terminal.
   - [ ] backend annotation merger?
 - UI
   - [x] selection detection
-  - [ ] tool picker
+  - [x] tool picker
   - [ ] deletion detection / options popup
   - [ ] comments
 
@@ -62,7 +62,7 @@ run `npm run dev` in a terminal.
 ### features
 
 - [ ] read config from file
-  - [ ] tool list
+  - [x] tool list
   - [ ] view defaults
 - [ ] bluebook my current highlight.
 - [ ] docx reader? html reader?
