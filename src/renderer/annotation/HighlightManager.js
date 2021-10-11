@@ -9,7 +9,7 @@ import { ToolList, ToolTypes } from "@/annotation/AnnotationTypes";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 import DocProxy from "@/annotation/DocProxy";
 import { testOutlineWriter, testAnnotation } from "@/tests/highlightManagerTests";
-import Logger from "../helpers";
+import { Logger } from "@/helpers";
 
 //const log = console.log;
 const logger = new Logger("HighlightManager", "green");

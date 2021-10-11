@@ -56,14 +56,6 @@ export default class PdfViewer extends Component {
       if (this.props.onInit) {
         this.props.onInit({});
       }
-      if (this.props.onScaleChanged) {
-        this.props.onScaleChanged({ scale: this.state.scale });
-      }
-    });
-    this._eventBus.on("scalechange", (e) => {
-      if (this.props.onScaleChanged) {
-        this.props.onScaleChanged({ scale: e.scale });
-      }
     });
   }
   render() {

@@ -4,6 +4,9 @@ import { getDocument } from "pdfjs-dist/webpack";
 import _ from "lodash";
 import HighlightManager from "@/annotation/HighlightManager";
 import path from "path";
+import { Logger, emitEvent } from "@/helpers";
+
+const logger = new Logger("PDFAnnotationEditor");
 
 export default class PDFAnnotationEditor {
   constructor(fileLocation, container) {
@@ -27,11 +30,14 @@ export default class PDFAnnotationEditor {
     window._pdf = this;
     this.listenToScroll = _.debounce(this.listenToScroll, 500, { leading: false, trailing: true });
     this.autoSave = _.debounce(this.autoSave.bind(this), 3000, { leading: false, trailing: true });
-    this._saveListener = this._saveListener.bind(this);
+    this.saveFileAndAnnotations = _.debounce(this.saveFileAndAnnotations.bind(this), 100, {
+      leading: false,
+      trailing: true,
+    });
 
     // load
     this.listenToAnnotationRender(() => {
-      console.log("[SteinPdfViewer] annotation layer rendered");
+      logger.log("[SteinPdfViewer] annotation layer rendered");
     });
     this._initialize();
   }
@@ -46,9 +52,10 @@ export default class PDFAnnotationEditor {
     this._pdfViewer.setDocument(doc);
     const tempRAL = PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer;
     PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer = function () {
-      console.log("[SteinPdfViewer] annotate");
+      logger.log("[SteinPdfViewer] annotate");
     };
     document.addEventListener("keypress", this._saveListener);
+    window.addEventListener("backend-save", this.saveFileAndAnnotations);
   }
 
   async redrawPage(pageIdx) {
@@ -72,7 +79,7 @@ export default class PDFAnnotationEditor {
     this._doc
       .getPageIndex(destination)
       .then((pageIndex) => callback(pageIndex + 1))
-      .catch((error) => console.log(`no pagenum for ${JSON.stringify(destination)}`));
+      .catch((error) => logger.log(`no pagenum for ${JSON.stringify(destination)}`));
   }
 
   listenToPageRender(callback) {
@@ -91,29 +98,24 @@ export default class PDFAnnotationEditor {
     this._eventBus.on("annotationlayerrendered", callback);
   }
 
-  async autoSave() {
+  async _save(location, message = "saving") {
     const saveLoc = `${this._tempFileLocation}`;
-    console.log(`[SteinPdfViewer] autoSAVING - ${saveLoc}`);
+    logger.log(`[SteinPdfViewer] (start) ${message} - ${saveLoc}`);
+    emitEvent("app-save-start", { message });
     const f = await this._highlightManager.getPDFBytes({
       filename: saveLoc.split("/").pop(),
     });
     fs.writeFileSync(saveLoc, f);
-    console.log(`[SteinPdfViewer] autoSAVED - ${saveLoc}`);
+    emitEvent("app-save-end", { message });
+    logger.log(`[SteinPdfViewer] (done) ${message} - ${saveLoc}`);
+  }
+  async autoSave() {
+    const saveLoc = `${this._tempFileLocation}`;
+    this._save(saveLoc, "auto-save");
   }
 
   async saveFileAndAnnotations() {
     const saveLoc = `${this._fileLocation}`;
-    console.log(`[SteinPdfViewer] SAVING - ${saveLoc}`);
-    const f = await this._highlightManager.getPDFBytes({
-      filename: saveLoc.split("/").pop(),
-    });
-    fs.writeFileSync(saveLoc, f);
-    console.log(`[SteinPdfViewer] SAVED - ${saveLoc}`);
-  }
-
-  _saveListener(e) {
-    if (e.key === "s" && e.ctrlKey) {
-      this.saveFileAndAnnotations();
-    }
+    this._save(saveLoc, "save");
   }
 }

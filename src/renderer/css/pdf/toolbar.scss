@@ -1,14 +1,56 @@
 #Toolbar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: var(--toolbar-height);
   background-color: var(--toolbar-bg-color);
-  color: var(--toolbar-fg-color);
   border-bottom: 1px solid var(--toolbar-fg-color);
   box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.2);
+  color: var(--toolbar-fg-color);
+  height: var(--toolbar-height);
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100%;
   z-index: 1;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  #toolbar-left,
+  #toolbar-right,
+  #toolbar-mid,
+  .toolbar-item {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  .toolbar-item {
+    font-family: monospace;
+    justify-content: space-around;
+    align-items: center;
+    &.page-number-view {
+      width: 200px;
+      .page-number {
+        input {
+          border: 1px solid black;
+          background: #666;
+          color: black;
+          height: 1.5em;
+          width: 4em;
+          text-align: right;
+        }
+      }
+    }
+    button {
+      --button-size: 1.3em;
+      border: 1px solid grey;
+      background: #666;
+      color: white;
+      height: var(--button-size);
+      width: var(--button-size);
+      font-weight: bolder;
+      font-size: var(--button-size);
+      margin: 2px;
+    }
+  }
   .resize-grip {
     height: var(--resize-grip-width);
     bottom: 0;

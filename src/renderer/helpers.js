@@ -15,7 +15,7 @@ function generateColorFromSeed(seed) {
  * if the only argument is a string, set the color to red
  * include the stacktrace in a collapsed group.
  */
-export default class Logger {
+export class Logger {
   constructor(label, color) {
     this.label = label;
     // if no color is provided, generate a color based on the label
@@ -40,4 +40,9 @@ export default class Logger {
     this.call(...args);
     return;
   }
+}
+
+export function emitEvent(eventName, eventData) {
+  const event = new CustomEvent(eventName, { detail: eventData });
+  window.dispatchEvent(event);
 }

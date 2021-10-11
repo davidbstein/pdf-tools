@@ -82,12 +82,15 @@ function initializeMenu() {
             properties: ["openFile"],
           });
           console.log(fileName);
+          sendMessageToActiveWindow("menu-clicked", { command: "open" });
         },
         Save: ({ application, menu, event }) => {
           console.log("SAVE FILE CLICKED", { application, menu, event });
+          sendMessageToActiveWindow("menu-clicked", { command: "save" });
         },
         Close: ({ application, menu, event }) => {
           console.log("CLOSE FILE CLICKED", { application, menu, event });
+          sendMessageToActiveWindow("menu-clicked", { command: "close" });
         },
       },
       ({ command, application, menu, event }) => {

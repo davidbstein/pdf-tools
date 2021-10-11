@@ -19,38 +19,62 @@ export const ToolTypes = {
 
 export const ToolList = [
   {
+    name: "(notable)",
+    color: "#FFFFaa",
+    opacity: 0.5,
+    type: ToolTypes.HIGHLIGHT,
+  },
+  {
     name: "Facts",
-    color: "#fffab9",
+    color: "#FAF446",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
     name: "Legal",
-    color: "#fdd9a8",
+    color: "#FFC677",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
     name: "Dissent",
-    color: "#fedbd8",
+    color: "#FFB5B0",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
     name: "Disposition",
-    color: "#ccefff",
+    color: "#94E3FC",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
-    name: "Procedure",
-    color: "#f0caff",
+    name: "History",
+    color: "#D9C9FE",
+    opacity: 0.5,
+    type: ToolTypes.HIGHLIGHT,
+  },
+  {
+    name: "Statute",
+    color: "#F3A9FF",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },
   {
     name: "Concurrences / Cites",
     color: "#deeed4",
+    opacity: 0.5,
+    type: ToolTypes.HIGHLIGHT,
+  },
+  {
+    name: "Paper",
+    color: "#D0D8FF",
+    opacity: 0.5,
+    type: ToolTypes.HIGHLIGHT,
+  },
+  {
+    name: "Challenged Doc",
+    color: "#F1F6B8",
     opacity: 0.5,
     type: ToolTypes.HIGHLIGHT,
   },

@@ -68,3 +68,46 @@ run `npm run dev` in a terminal.
 - [ ] docx reader? html reader?
 - [ ] finder integration?
 - [ ] OS hooks?
+
+## Notes
+
+### EventBus Events from pdf.js
+
+- afterprint
+- beforeprint
+- documentproperties
+- download
+- find
+- findfromurlhash
+- firstpage
+- hashchange
+- lastpage
+- namedaction
+- nextpage
+- optionalcontentconfig
+- pagechanging
+- pagemode
+- pagenumberchanged
+- pagerendered
+- presentationmode
+- presentationmodechanged
+- previouspage
+- print
+- resize
+- rotateccw
+- rotatecw
+- rotationchanging
+- save
+- scalechanged
+- scalechanging
+- scrollmodechanged
+- sidebarviewchanged
+- spreadmodechanged
+- switchscrollmode
+- switchspreadmode
+- updatefindcontrolstate
+- updatefindmatchescount
+- updateviewarea
+- zoomin
+- zoomout
+- zoomreset

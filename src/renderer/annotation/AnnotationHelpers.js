@@ -59,22 +59,24 @@ export function selectionToNodes(selection) {
   const nodes = [];
   if (selection.rangeCount == 0) return nodes;
   const range = selection.getRangeAt(0);
-  const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT, {
-    acceptNode: (node) =>
-      range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
-  });
-  while (walker.nextNode()) {
-    nodes.push(walker.currentNode);
+  if (range.startContainer == range.endContainer) {
+    nodes.push(range.startContainer);
+  } else {
+    const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) =>
+        range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+    });
+    while (walker.nextNode()) {
+      nodes.push(walker.currentNode);
+    }
   }
   // split the first and last element if they are not in the selection, then remove them from the nodelist
-  if (nodes.length == 0) {
-    return [];
+  if (nodes.length == 0) return [];
+  if (range.endOffset < nodes[nodes.length - 1].length) {
+    nodes[nodes.length - 1].splitText(range.endOffset);
   }
   if (range.startOffset) {
     nodes[0] = nodes[0].splitText(range.startOffset);
-  }
-  if (range.endOffset < nodes[nodes.length - 1].length) {
-    nodes[nodes.length - 1].splitText(range.endOffset);
   }
   return nodes;
 }
@@ -189,6 +191,7 @@ export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
 export function currentSelection(doc) {
   const selection = window.getSelection();
   const nodes = selectionToNodes(selection);
+  console.log(nodes);
   if (nodes.length == 0) return null;
   const pageDiv = getAncestorWithClass(nodes[0], "page");
   const endpageDiv = getAncestorWithClass(nodes[nodes.length - 1], "page");
