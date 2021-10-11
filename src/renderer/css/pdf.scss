@@ -17,6 +17,19 @@
 @import "./pdf/toolbar.scss";
 @import "./pdf/viewer.scss";
 
+#main-loading-div {
+  // animate the loading text a little...
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 4em;
+}
+
 .resize-grip {
   border: 1px solid #999;
   background-color: #ccc;

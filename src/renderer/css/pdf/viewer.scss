@@ -10,12 +10,15 @@
   overflow-x: hidden;
   .highlight-layer {
     z-index: 1;
+    position: absolute;
   }
   .canvasWrapper {
     z-index: 2;
+    position: absolute;
   }
   .textLayer {
     z-index: 3;
+    position: absolute;
   }
   .mouse-follower-popup {
     --tool-option-item-width: 20px;
@@ -30,7 +33,7 @@
     justify-content: flex-start;
     flex-wrap: wrap;
     align-items: flex-start;
-    width: calc(3 * (2px + var(--tool-option-item-width) + 2 * var(--tool-option-item-margin)));
+    width: calc(4 * (2px + var(--tool-option-item-width) + 2 * var(--tool-option-item-margin)));
     opacity: 0.6;
     box-shadow: 0px 0px 1px 1px grey;
     .tool-option {
@@ -62,11 +65,11 @@
     }
   }
   #pdfViewer {
-    --gap-size: 10px;
+    --gap-size: 2px;
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-start;
-    align-items: center;
+    align-items: top;
     align-content: flex-start;
     gap: var(--gap-size);
     padding: var(--gap-size);
@@ -76,7 +79,7 @@
       margin: 0 0 0 0; /*hi */
       border-image: none;
       border: none;
-      box-shadow: 0 0 6px 0 black;
+      box-shadow: 0 0 2px 0 black;
       display: block;
       position: relative;
       background: rgba(255, 255, 255, 0.5);
