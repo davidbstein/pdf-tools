@@ -11,9 +11,21 @@
   width: 100%;
   z-index: 1;
 
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr;
+  column-gap: 10px;
   align-items: center;
+  min-width: 0;
+  min-height: 0;
+  #toolbar-left {
+    grid-column: 1 / span 1;
+  }
+  #toolbar-mid {
+    grid-column: 2 / span 1;
+  }
+  #toolbar-right {
+    grid-column: 3 / span 1;
+  }
 
   #toolbar-left,
   #toolbar-right,
@@ -21,11 +33,39 @@
   .toolbar-item {
     display: flex;
     flex-wrap: nowrap;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
   }
   .toolbar-item {
     font-family: monospace;
-    justify-content: space-around;
+    justify-content: end;
     align-items: center;
+    flex-grow: 1;
+    padding: 0 10px;
+    position: relative;
+    &.current-path {
+      justify-content: start;
+      font-size: 11px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      flex-wrap: nowrap;
+      .breadcrumb-title {
+        font-size: 11px;
+        margin-right: 5px;
+        color: rgb(221, 221, 221);
+      }
+      .breadcrumb-separator {
+        font-size: 11px;
+        margin-right: 5px;
+        font-weight: bold;
+        color: rgb(134, 128, 226);
+      }
+    }
     &.page-number-view {
       width: 200px;
       .page-number {

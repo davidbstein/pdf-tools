@@ -116,11 +116,22 @@ export default class DocProxy {
   listOutlines() {
     return this.listIndirectObjects()
       .filter(
-        (obj) =>
-          obj["/Type"] === "/Outlines" ||
-          (obj["/First"] && obj["/Last"] && obj["/Count"] && !obj["/Parent"])
+        (obj) => obj["/Type"] === "/Outlines" || (obj["/First"] && obj["/Last"] && !obj["/Parent"])
       )
       .map(this._rootToOutline);
+  }
+
+  _serializeOutlineNode(outlineNode) {
+    return {
+      title: outlineNode.title,
+      children: outlineNode.children.map((child) => this._serializeOutlineNode(child)),
+      pageIdx: outlineNode.pageIdx,
+    };
+  }
+
+  listSerializableOutlines() {
+    const outlines = this.listOutlines();
+    return outlines.map(this._serializeOutlineNode);
   }
 
   listPageRefs() {
@@ -137,7 +148,13 @@ export default class DocProxy {
         else break;
       }
     }
-    return { node, title: node["/Title"], children, dest: node["/Dest"] };
+    return {
+      node,
+      title: node["/Title"],
+      children,
+      dest: node["/Dest"],
+      pageIdx: this.listPageRefs().indexOf(node["/Dest"]?.[0].ref),
+    };
   }
 
   updateMaxObjectNumber() {
@@ -197,8 +214,8 @@ export default class DocProxy {
         current.info = {};
         current.info.ref = this.doc.context.nextRef();
         current.info.count = 0;
-        if (current.page != undefined)
-          current.info.dest = this._genDest(current.page, this.doc.context);
+        if (current.pageIdx != undefined)
+          current.info.dest = this._genDest(current.pageIdx, this.doc.context);
         if (current.title) current.info.title = current.title;
         if (current.children?.length > 0) {
           current.children.forEach((child, idx, array) => {
@@ -307,7 +324,7 @@ export default class DocProxy {
     return {
       removeFn: () => {
         console.log("remove highlight");
-        this.doc.context.delete(params.ref);
+        pageLeaf.removeAnnot(params.ref);
         params.ref = null;
       },
       addFn: () => {

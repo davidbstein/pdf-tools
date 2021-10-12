@@ -1,10 +1,10 @@
+import _ from "lodash";
+import { getDocument } from "pdfjs-dist/webpack";
+import { Logger, emitEvent } from "@/helpers";
 import * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
 import fs from "fs";
-import { getDocument } from "pdfjs-dist/webpack";
-import _ from "lodash";
 import HighlightManager from "@/annotation/HighlightManager";
 import path from "path";
-import { Logger, emitEvent } from "@/helpers";
 
 const logger = new Logger("PDFAnnotationEditor");
 
@@ -43,8 +43,16 @@ export default class PDFAnnotationEditor {
   }
 
   async _initialize() {
-    fs.copyFile(this._fileLocation, this._tempFileLocation, () => {});
-    const filebuffer = fs.readFileSync(this._fileLocation).buffer;
+    const fileLastModified = fs.statSync(this._fileLocation).mtime;
+    const backupExists = fs.existsSync(this._tempFileLocation);
+    let restore = false;
+    if (backupExists) {
+      const backupLastModified = backupExists && fs.statSync(this._tempFileLocation).mtime;
+      if (backupLastModified > fileLastModified)
+        restore = confirm(`Backup exists for ${path.parse(this._fileLocation).base}. Recover?`);
+    }
+    const readTarget = restore ? this._tempFileLocation : this._fileLocation;
+    const filebuffer = fs.readFileSync(readTarget).buffer;
     this._highlightManager = new HighlightManager(this);
     await this._highlightManager._initializeDocument(filebuffer);
     const doc = await getDocument(await this._highlightManager.getPDFBytes()).promise;
@@ -69,10 +77,8 @@ export default class PDFAnnotationEditor {
     this._doc.getOutline().then(callback);
   }
 
-  goToDestinationPage(destination) {
-    this._doc.getPageIndex(destination).then((pageIndex) => {
-      this._pdfViewer.currentPageNumber = pageIndex + 1;
-    });
+  goToDestinationPage(pageIdx) {
+    this._pdfViewer.currentPageNumber = pageIdx + 1;
   }
 
   lookupDestinationPage(destination, callback) {
@@ -99,7 +105,7 @@ export default class PDFAnnotationEditor {
   }
 
   async _save(location, message = "saving") {
-    const saveLoc = `${this._tempFileLocation}`;
+    const saveLoc = `${location}`;
     logger.log(`[SteinPdfViewer] (start) ${message} - ${saveLoc}`);
     emitEvent("app-save-start", { message });
     const f = await this._highlightManager.getPDFBytes({

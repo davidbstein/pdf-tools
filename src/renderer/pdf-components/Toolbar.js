@@ -1,6 +1,53 @@
 import React, { Component } from "react";
 import { ResizeGrip } from "@/components/ResizablePanel";
 
+function outlineToBreadcrumb(outline, pageIdx) {
+  const breadcrumb = [];
+  let current = outline;
+  breadcrumb.push(current?.title);
+  while (current?.children.length > 0) {
+    current = current.children
+      .filter((child) => child.pageIdx <= pageIdx)
+      .sort((a, b) => b.pageIdx - a.pageIdx)[0];
+    breadcrumb.push(current.title);
+  }
+  return breadcrumb;
+}
+
+class CurrentPath extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      currentPath: [],
+    };
+    this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, {
+      leading: false,
+      trailing: true,
+    });
+    window._pdf._eventBus.on("pagechanging", this.handleScroll);
+  }
+  handleScroll() {
+    const outlineRoot = window.HighlightManager.docProxy.listSerializableOutlines();
+    const pageIdx = window._pdf._pdfViewer.currentPageNumber - 1;
+    this.setState({
+      currentPath: outlineToBreadcrumb(outlineRoot?.[0], pageIdx),
+    });
+  }
+  render() {
+    return (
+      <div className="toolbar-item current-path">
+        {this.state.currentPath.map((title, idx) => (
+          <span className="breadcrumb-item" key={idx}>
+            {" "}
+            <span className="breadcrumb-title">{title}</span>
+            <span className="breadcrumb-separator">/</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+}
+
 class PageNumberControls extends Component {
   constructor(props) {
     super(props);
@@ -94,12 +141,14 @@ export default class Toolbar extends Component {
     return (
       <div id="Toolbar">
         <div id="toolbar-left">
-          <PageNumberControls />
+          <CurrentPath />
         </div>
         <div id="toolbar-mid">
           <ZoomControls />
         </div>
-        <div id="toolbar-right"> </div>
+        <div id="toolbar-right">
+          <PageNumberControls />
+        </div>
 
         <ResizeGrip resize={this.resize} />
       </div>

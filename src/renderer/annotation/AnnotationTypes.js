@@ -15,6 +15,16 @@ export const ToolTypes = {
   FREE_TEXT: "FreeText",
   POPUP: "Popup",
   LINE: "Line",
+  OUTLINE: "Outline",
+  CROP: "Crop",
+  ERASER: "Eraser",
+};
+
+export const ToolCategories = {
+  MARKUP_TYPES: [ToolTypes.HIGHLIGHT, ToolTypes.UNDERLINE, ToolTypes.SQUIGGLY, ToolTypes.STRIKEOUT],
+  DRAWING_TYPES: [ToolTypes.LINE, ToolTypes.FREE_TEXT],
+  METADATA_TYPES: [ToolTypes.LINK, ToolTypes.POPUP],
+  EDITOR_TYPES: [ToolTypes.OUTLINE, ToolTypes.CROP, ToolTypes.ERASER],
 };
 
 export const ToolList = [
@@ -90,10 +100,15 @@ export const ToolList = [
     type: ToolTypes.UNDERLINE,
     underline_thickness: "1px",
   },
+  {
+    name: "Outline",
+    type: ToolTypes.OUTLINE,
+    color: "#0000ff",
+  },
 ].map(function (annotationType) {
   return {
     ...annotationType,
-    color: colorToRGB(annotationType.color),
-    colorHex: colorToHex(annotationType.color),
+    color: colorToRGB(annotationType.color ? annotationType.color : "#0000ff"),
+    colorHex: colorToHex(annotationType.color ? annotationType.color : "#0000ff"),
   };
 });

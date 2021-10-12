@@ -42,7 +42,10 @@ export class Logger {
   }
 }
 
+const eventLogger = new Logger("eventEmitter");
+
 export function emitEvent(eventName, eventData) {
   const event = new CustomEvent(eventName, { detail: eventData });
+  eventLogger.log(eventName, eventData);
   window.dispatchEvent(event);
 }

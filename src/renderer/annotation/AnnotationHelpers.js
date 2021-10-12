@@ -188,10 +188,14 @@ export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
   return quadPoint;
 }
 
+export function getSelectionPageNumber({ pageDiv }) {
+  const pageNumber = pageDiv.getAttribute("data-page-number");
+  return pageNumber;
+}
+
 export function currentSelection(doc) {
   const selection = window.getSelection();
   const nodes = selectionToNodes(selection);
-  console.log(nodes);
   if (nodes.length == 0) return null;
   const pageDiv = getAncestorWithClass(nodes[0], "page");
   const endpageDiv = getAncestorWithClass(nodes[nodes.length - 1], "page");

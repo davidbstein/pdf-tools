@@ -4,12 +4,14 @@ import {
   colorToHex,
   colorToRGB,
   annotationToDivs,
+  getSelectionPageNumber,
 } from "@/annotation/AnnotationHelpers";
 import { ToolList, ToolTypes } from "@/annotation/AnnotationTypes";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 import DocProxy from "@/annotation/DocProxy";
 import { testOutlineWriter, testAnnotation } from "@/tests/highlightManagerTests";
-import { Logger } from "@/helpers";
+import { Logger, emitEvent } from "@/helpers";
+import { ToolCategories } from "./AnnotationTypes";
 
 //const log = console.log;
 const logger = new Logger("HighlightManager", "green");
@@ -35,7 +37,7 @@ export default class HighlightManager {
       this[_method] = _method != "constructor" ? this[_method]?.bind(this) : 0;
 
     //instance internals
-    _.debounce(this._doAnnotateSelection, 100, { trailing: true });
+    _.debounce(this._doMarkupSelection, 100, { trailing: true });
     this._pdf = pdfViewer;
     this._pendingSelectionChange = false;
     this.highlightDivs = {};
@@ -73,7 +75,7 @@ export default class HighlightManager {
     return this.styleTag;
   }
 
-  _doAnnotateSelection(selection) {
+  _doMarkupSelection(selection) {
     const action = this.docProxy.createHighlight({ ...selection, ...this.currentTool });
     action.redoFn();
     this.undoQueue.push(action);
@@ -81,6 +83,16 @@ export default class HighlightManager {
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
     this._pdf.autoSave();
     this._drawPage(action.params.pageIdx);
+  }
+
+  _doEditSelection(selection) {
+    if (this.currentTool.type == ToolTypes.OUTLINE) {
+      emitEvent("outline-edit", {
+        text: selection.text,
+        pageNumber: selection.pageNumber,
+        pageIdx: selection.pageIdx,
+      });
+    }
   }
 
   _detectPageRender({ pageNumber, ...rest }) {
@@ -146,7 +158,12 @@ export default class HighlightManager {
     if (e.button == 0) {
       this._pendingSelectionChange = false;
       const selection = currentSelection(this.docProxy);
-      if (selection != null) this._doAnnotateSelection(selection);
+      if (ToolCategories.MARKUP_TYPES.includes(this.currentTool.type)) {
+        if (selection != null) this._doMarkupSelection(selection);
+      }
+      if (ToolCategories.EDITOR_TYPES.includes(this.currentTool.type)) {
+        if (selection != null) this._doEditSelection(selection);
+      }
     }
     if (e.button == 1) {
       //logger.log("middle mouse");
@@ -191,6 +208,20 @@ export default class HighlightManager {
   setCurrentTool(tool) {
     this._initStyleTag();
     this.currentTool = tool;
+    if (ToolCategories.MARKUP_TYPES.includes(tool.type)) this._setMarkupTool(tool);
+    if (ToolCategories.EDITOR_TYPES.includes(tool.type)) this._setEditTool(tool);
+    this._setMarkupTool(tool);
+    this._broadcastToolChange();
+  }
+
+  _setEditTool(tool) {
+    if (tool.type == ToolTypes.OUTLINE) {
+      const rawCSS = `:root { --highlight-color : default;}`;
+      this.styleTag.innerHTML = rawCSS;
+    }
+  }
+
+  _setMarkupTool(tool) {
     const rawCSS = `:root { 
       --highlight-color : ${
         tool.type == ToolTypes.HIGHLIGHT
@@ -204,7 +235,6 @@ export default class HighlightManager {
       };
     }`;
     this.styleTag.innerHTML = rawCSS;
-    this._broadcastToolChange();
   }
 
   getCurrentTool() {

@@ -1,69 +1,106 @@
 import React, { Component } from "react";
 import _ from "lodash";
-import "@/css/pdf-sidebar.scss";
+import "@/css/pdf/sidebar.scss";
 import { ResizeGrip } from "@/components/ResizablePanel";
+import { Logger } from "../helpers";
 
-/**
- * an outline is a list of nodes.
- * Each node has a title `node.title`, an array of children `node.items`, and a target `node.dest`.
- * Outline displays a tree of nodes, with expandable/collapsable nodes.
- *
- * currentPath is a list of nodes indexes, indicating the current position in the outline tree.
- * @param {object{Array{@pdfjs-dist/types/src/display/api.d.ts#OutlineNode}}} outline
- */
-function Outline({ outline, currentPath = [] }) {
-  return (
-    <div>
-      {outline
-        ? outline.map((node, index) => (
-            <OutlineNode key={index} node={node} currentPath={currentPath} level={0} />
-          ))
-        : []}
-    </div>
-  );
-}
+const logger = new Logger("Sidebar");
 
 class OutlineNode extends Component {
   constructor(props) {
     super(props);
-    const {
-      currentPath,
-      level,
-      node: { dest: destination },
-    } = this.props;
-    const isCurrent = _.isEqual(currentPath, [level]);
     this.state = {
-      expanded: level == 0 || isCurrent,
-      pageIndex: null,
+      dragOver: false,
+      dragX: 0,
+      dragY: 0,
     };
-    window._pdf.lookupDestinationPage(
-      destination?.[0],
-      ((pageIndex) => this.setState({ pageIndex })).bind(this)
-    );
+    logger.log(props);
     this.goToNode = this.goToNode.bind(this);
+    this.onDragStart = this.onDragStart.bind(this);
+    this.onDragOver = this.onDragOver.bind(this);
+    this.onDragEnter = this.onDragEnter.bind(this);
+    this.onDragEnd = this.onDragEnd.bind(this);
+    this.onDragExit = this.onDragExit.bind(this);
+    this.onDrop = this.onDrop.bind(this);
   }
 
   goToNode() {
-    window._pdf.goToDestinationPage(this.props.node.dest?.[0]);
+    window._pdf.goToDestinationPage(this.props.node.pageIdx);
+  }
+
+  onDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    logger.log(e.dataTransfer.getData("text/json"));
+    logger.log("onDrop", this.props.node.title, e);
+    this.setState({ dragOver: false, dragX: 0, dragY: 0 });
+  }
+
+  onDragStart(e) {
+    logger.log(`onDragStart`, e);
+    e.dataTransfer.setData("text/json", JSON.stringify(this.props.node));
+  }
+
+  onDragOver(e) {
+    e.preventDefault();
+    this.setState({
+      dragOver: true,
+      dragX: e.clientX,
+      dragY: e.clientY,
+    });
+  }
+
+  onDragEnter(e) {
+    e.preventDefault();
+    this.setState({ dragOver: true, dragX: e.clientX, dragY: e.clientY });
+  }
+
+  onDragExit(e) {
+    e.preventDefault();
+    this.setState({ dragOver: false, dragX: e.clientX, dragY: e.clientY });
+  }
+
+  onDragEnd(e) {
+    e.preventDefault();
+    this.setState({ dragOver: false, dragX: 0, dragY: 0 });
   }
 
   render() {
-    const { node, currentPath, level } = this.props;
-    const { expanded } = this.state;
+    const { node, currentPath = "", level = 0 } = this.props;
     return (
-      <div className="outline-node">
+      <div className={`outline-node`}>
         <div className="outline-node-title-indent" />
         <div className="outline-node-title" onClick={this.goToNode}>
-          {node.title}
-          {this.state.pageIndex ? (
-            <div className="outline-node-page-number">p. {this.state.pageIndex}</div>
+          <div
+            className={`title-name ${this.state.dragOver ? "dragOver" : ""} ${
+              node.pageIdx >= this.props.pageRange[0] ? "later-than-visible-start" : ""
+            } ${node.pageIdx <= this.props.pageRange[1] ? "earlier-than-visible-end" : ""}`}
+            draggable="true"
+            onDragOver={this.onDragOver}
+            onDragStart={this.onDragStart}
+            onDragEnd={this.onDragEnd}
+            onDragEnter={this.onDragEnter}
+            onDragExit={this.onDragExit}
+            onDragLeave={this.onDragExit}
+            onDrop={this.onDrop}
+          >
+            {node.title}
+          </div>
+          {node.pageIdx ? (
+            <div className="outline-node-page-number">p. {node.pageIdx}</div>
           ) : (
             <div />
           )}
         </div>
         <div className="outline-subnodes">
-          {node.items.map((node, index) => (
-            <OutlineNode key={index} node={node} currentPath={currentPath} level={level + 1} />
+          {node.children.map((node, index) => (
+            <OutlineNode
+              key={index}
+              node={node}
+              currentPath={currentPath}
+              level={level + 1}
+              pageRange={this.props.pageRange}
+            />
           ))}
         </div>
       </div>
@@ -75,13 +112,26 @@ export default class Sidebar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      outline: [],
+      outlineRoots: window.HighlightManager.docProxy.listSerializableOutlines(),
+      pageRange: (window._pdf?._pdfViewer?.currentPageNumber || 0) - 1,
     };
-    window._pdf.getOutline((outline) => {
-      this.setState({ outline });
-    });
     this.resize = this.resize.bind(this);
+    this.handleOutlineChange = this.handleOutlineChange.bind(this);
+    this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, {
+      leading: true,
+      trailing: true,
+    });
+    window._pdf._eventBus.on("pagechanging", this.handleScroll);
   }
+
+  handleScroll() {
+    const visisblePages = window._pdf._pdfViewer._getVisiblePages();
+    const pageRange = [visisblePages.first.id, visisblePages.last.id];
+    logger.log("handleScroll", pageRange);
+    this.setState({ pageRange });
+  }
+
+  handleOutlineChange() {}
 
   resize(e) {
     this.props.resize(e.x);
@@ -91,7 +141,9 @@ export default class Sidebar extends Component {
     return (
       <div id="Sidebar">
         <div id="OutlineView">
-          <Outline outline={this.state.outline} />
+          {this.state.outlineRoots.map((outlineRoot, index) => (
+            <OutlineNode key={index} node={outlineRoot} pageRange={this.state.pageRange} />
+          ))}
         </div>
         <ResizeGrip resize={this.resize} />
       </div>

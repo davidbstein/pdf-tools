@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "A simple highlighter/cropper/notetaker for PDFs. Designed to move my physical workflow (printed pages, highlighters and pens) into a digital context.",
   "main": "main.js",
+  "icon": "icon.ico",
   "@comment devDependencies": {
     "pdfassembler": "*",
     "pdf-annotate": "*"
@@ -12,8 +13,10 @@
     "@babel/preset-env": "^7.15.6",
     "@babel/preset-react": "^7.14.5",
     "babel-loader": "^8.2.2",
+    "crypto-js": "^4.1.1",
     "css-loader": "^3.6.0",
     "electron": "*",
+    "electron-builder": "^22.13.1",
     "electron-context-menu": "^3.1.1",
     "electron-webpack": "*",
     "file-icon-vectors": "^1.0.0",
@@ -63,9 +66,25 @@
     "dev": "electron-webpack dev",
     "compile": "electron-webpack",
     "dist": "yarn compile && electron-builder",
-    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
+    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null",
+    "build": "electron-webpack && yarn compile && electron-builder"
+  },
+  "build": {
+    "appId": "com.stein.pdf-tools",
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF",
+        "role": "Editor"
+      }
+    ],
+    "copyright": "Copyright David Stein 2021",
+    "productName": "Stein's PDF Notetaking Tools"
   },
   "dependencies": {
-    "electron": "^14.0.1"
+    "source-map-support": "^0.5.20"
   }
 }

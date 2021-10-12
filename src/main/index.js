@@ -11,7 +11,10 @@ import {
 } from "./windowManagement";
 import os from "os";
 
-const DEFAULT_DIR = `${os.homedir()}/Dropbox/_Law/TEST`;
+const DEFAULT_DIR =
+  process.env.NODE_ENV !== "production"
+    ? `${os.homedir()}/Dropbox/_Law/TEST`
+    : `${os.homedir()}/Dropbox/_Law`;
 
 function _log() {
   // console.trace();
@@ -21,6 +24,10 @@ function _log() {
 /**
  * Application level actions. "ready" is the main application loop.
  */
+
+app.on("open-url", (event, url) => {
+  dialog.showErrorBox("Welcome Back", `You arrived from: ${url}`);
+});
 
 app.on("ready", () => {
   _log(`APP EVENT -- ready`);
@@ -32,6 +39,7 @@ app.on("ready", () => {
 app.on("open-file", (event, path) => {
   _log(`APP EVENT -- open-file: ${path}`);
   event.preventDefault();
+  createPDFWindow({ filePath: path });
   _log(`trying to open ${path}`);
 });
 
