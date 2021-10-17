@@ -7,7 +7,15 @@ import CryptoJS from "crypto-js";
 function generateColorFromSeed(seed) {
   const hash = CryptoJS.MD5(seed);
   const [r, g, b] = hash.words.slice(0, 3).map((x) => x % 256);
-  return "#" + ((1 << 24) + r * 0xffffff + g * 0xffff + b * 0xff).toString(16).slice(1);
+  return "#" + ((1 << 24) + r * 0xff0000 + g * 0xff00 + b * 0xff).toString(16).slice(1);
+}
+
+function brightnessOfHexColor(color) {
+  const rgb = parseInt(color.replace("#", ""), 16);
+  const r = (rgb >> 16) & 0xff;
+  const g = (rgb >> 8) & 0xff;
+  const b = (rgb >> 0) & 0xff;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 /**
@@ -20,6 +28,7 @@ export class Logger {
     this.label = label;
     // if no color is provided, generate a color based on the label
     this.color = color || generateColorFromSeed(label);
+    this.backgroundColor = brightnessOfHexColor(this.color) > 128 ? "black" : "white";
   }
 
   getStackTrace() {
@@ -30,7 +39,11 @@ export class Logger {
   }
 
   call(...args) {
-    console.groupCollapsed(`%c[${this.label}]`, `color: ${this.color}`, ...args);
+    console.groupCollapsed(
+      `%c[${this.label}]`,
+      `color: ${this.color}; background: ${this.backgroundColor}`,
+      ...args
+    );
     console.log(this.getStackTrace());
     console.groupEnd();
     return;

@@ -22,10 +22,20 @@ class OutlineNode extends Component {
     this.onDragEnd = this.onDragEnd.bind(this);
     this.onDragExit = this.onDragExit.bind(this);
     this.onDrop = this.onDrop.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
   }
 
   goToNode() {
     window._pdf.goToDestinationPage(this.props.node.pageIdx);
+  }
+
+  onMouseUp(e) {
+    if (e.button === 0) {
+      return this.goToNode();
+    }
+    if (e.button === 2) {
+      //RIGHT CLICK
+    }
   }
 
   onDrop(e) {

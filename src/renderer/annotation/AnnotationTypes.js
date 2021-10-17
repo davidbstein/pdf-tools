@@ -105,6 +105,11 @@ export const ToolList = [
     type: ToolTypes.OUTLINE,
     color: "#0000ff",
   },
+  {
+    name: "Eraser",
+    type: ToolTypes.ERASER,
+    color: "#ffffff",
+  },
 ].map(function (annotationType) {
   return {
     ...annotationType,

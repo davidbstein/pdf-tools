@@ -53,13 +53,7 @@ export default class HighlightManager {
   async _initializeDocument(data) {
     const container = this._pdf._container;
     this.docProxy = await DocProxy.createDocProxy(data);
-    container.addEventListener("mouseup", this._processMouseUp);
-    container.addEventListener("mouseleave", this._processMouseUp);
-    container.addEventListener("mousedown", this._processMouseDown);
-    container.addEventListener("mousemove", this._processMouseMove);
-    container.addEventListener("mouseleave", this._processMouseLeave);
-    container.addEventListener("selectionchange", () => (this._pendingSelectionChange = true));
-    //window.addEventListener("keypress", this._processKeyPress);
+    window.addEventListener("pdf-selection-made", this._processSelectionComplete);
     window.addEventListener("backend-undo", this._processUndo);
     this._pdf.listenToPageRender(this._detectPageRender);
     this._pdf.listenToPageChange(this._detectPageChange);
@@ -149,36 +143,15 @@ export default class HighlightManager {
     return highlightLayerDiv;
   }
 
-  _processMouseDown(e) {
-    //logger.log(`mouse down ${e.button}`);
-  }
-
-  _processMouseUp(e) {
-    //logger.log(`mouse up ${e.button}`);
-    if (e.button == 0) {
-      this._pendingSelectionChange = false;
-      const selection = currentSelection(this.docProxy);
-      if (ToolCategories.MARKUP_TYPES.includes(this.currentTool.type)) {
-        if (selection != null) this._doMarkupSelection(selection);
-      }
-      if (ToolCategories.EDITOR_TYPES.includes(this.currentTool.type)) {
-        if (selection != null) this._doEditSelection(selection);
-      }
+  _processSelectionComplete() {
+    this._pendingSelectionChange = false;
+    const selection = currentSelection(this.docProxy);
+    if (ToolCategories.MARKUP_TYPES.includes(this.currentTool.type)) {
+      if (selection != null) this._doMarkupSelection(selection);
     }
-    if (e.button == 1) {
-      //logger.log("middle mouse");
+    if (ToolCategories.EDITOR_TYPES.includes(this.currentTool.type)) {
+      if (selection != null) this._doEditSelection(selection);
     }
-    if (e.button == 2) {
-      //logger.log("right mouse");
-    }
-  }
-
-  _processMouseMove(e) {
-    //logger.log(`mouse move ${e.button}`);
-  }
-
-  _processMouseLeave(e) {
-    //logger.log(`mouse leave ${e.button}`);
   }
 
   _processUndo(e) {

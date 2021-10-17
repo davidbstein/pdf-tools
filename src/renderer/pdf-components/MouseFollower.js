@@ -1,25 +1,45 @@
+/**
+ *  TODO - I want a lot of what buttons do to live in a config file, so I'm
+ * trying to refactor them all into a single mouse management thing.
+ */
+
 import React, { Component } from "react";
 import { ToolList } from "../annotation/AnnotationTypes";
+import { emitEvent, Logger } from "../helpers";
 
-function ToolOption(props) {
-  return (
-    <div
-      className={`tool-option ${props.selected ? "tool-option-selected" : ""}`}
-      onMouseEnter={() => {
-        console.log(props.toolOption);
-        window.HighlightManager.setCurrentTool(props.toolOption);
-      }}
-    >
+const logger = new Logger("MouseFollower");
+
+class ToolOption extends Component {
+  constructor(props) {
+    super(props);
+  }
+  componentDidMount() {
+    this.ref;
+  }
+  render() {
+    const props = this.props;
+    return (
       <div
-        className="tool-option-icon"
-        style={{
-          backgroundColor: props.toolOption.colorHex,
+        className={`tool-option ${props.selected ? "tool-option-selected" : ""}`}
+        onMouseEnter={() => {
+          logger.log(props.toolOption);
+        }}
+        onMouseDown={() => {
+          window.HighlightManager.setCurrentTool(props.toolOption);
+          props.unshowToolOption();
         }}
       >
-        <div className="tool-option-popup">{props.toolOption.name}</div>
+        <div
+          className="tool-option-icon"
+          style={{
+            backgroundColor: props.toolOption.colorHex,
+          }}
+        >
+          <div className="tool-option-popup">{props.toolOption.name}</div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 /**
@@ -31,15 +51,18 @@ export default class MouseFollower extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      buttonsPressed: [0, 0, 0],
       cursorLocation: { x: 0, y: 0 },
       cursorVisible: false,
-      buttonsPressed: [0, 0, 0],
+      showToolOption: false,
       tool: {},
     };
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseLeave = this.handleMouseLeave.bind(this);
+    this.handleSelectionChange = this.handleSelectionChange.bind(this);
+    this.handleClick = this.handleClick.bind(this);
     this.setTool = this.setTool.bind(this);
     window.addEventListener("pdf-tool-change", this.setTool);
   }
@@ -50,12 +73,20 @@ export default class MouseFollower extends Component {
     elem.addEventListener("mousedown", this.handleMouseDown);
     elem.addEventListener("mouseup", this.handleMouseUp);
     elem.addEventListener("mouseleave", this.handleMouseLeave);
+    elem.addEventListener("click", this.handleClick);
+    document.addEventListener("selectionchange", this.handleSelectionChange);
+  }
+
+  handleClick(e) {
+    console.log("click", e);
+  }
+
+  handleSelectionChange(e) {
+    this.setState({ pendingSelection: true });
   }
 
   handleMouseMove(e) {
-    if (this.state.buttonsPressed[1]) {
-      return;
-    }
+    if (this.state.showToolOption) return;
     this.setState({
       cursorLocation: { x: e.clientX, y: e.clientY },
       cursorVisible: true,
@@ -69,8 +100,20 @@ export default class MouseFollower extends Component {
   }
 
   handleMouseUp(e) {
+    const newState = {};
+    if (e.button === 0) {
+      newState.showToolOption = false;
+      if (this.state.pendingSelection) {
+        if (document.getSelection().rangeCount > 0) emitEvent("pdf-selection-made", e);
+        newState.pendingSelection = false;
+      }
+    }
+    if (e.button === 1) {
+      newState.showToolOption = true;
+    }
     this.setState({
       buttonsPressed: this.state.buttonsPressed.map((b, i) => (i === e.button ? false : b)),
+      ...newState,
     });
   }
 
@@ -90,7 +133,7 @@ export default class MouseFollower extends Component {
   render() {
     const { cursorLocation, cursorVisible, buttonsPressed, tool } = this.state;
     if (!cursorVisible) return <div />;
-    if (buttonsPressed[1]) {
+    if (this.state.showToolOption) {
       return (
         <div
           className="mouse-follower-popup"
@@ -104,6 +147,7 @@ export default class MouseFollower extends Component {
               key={toolOption.name}
               toolOption={toolOption}
               selected={toolOption?.name == tool.name}
+              unshowToolOption={() => this.setState({ showToolOption: false })}
             />
           ))}
         </div>

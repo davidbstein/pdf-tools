@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { ResizeGrip } from "@/components/ResizablePanel";
+import { stubArray } from "lodash";
 
 function outlineToBreadcrumb(outline, pageIdx) {
   const breadcrumb = [];
@@ -129,6 +130,42 @@ class ZoomControls extends Component {
   }
 }
 
+class HighlightLevelToggle extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      level: 1,
+    };
+    this.toggleLevel = this.toggleLevel.bind(this);
+  }
+  toggleLevel() {
+    this.setState({
+      level: this.state.level === 1 ? 3 : 1,
+    });
+  }
+  render() {
+    return (
+      <div className="toolbar-item">
+        <style>
+          {`
+          #Toolbar .toolbar-item button.highlight-level-toggle {
+            font-size: 10px;
+            font-weight: light;
+            width: fit-content;
+          }
+          #Viewer .highlight-layer {
+            z-index: ${this.state.level};
+          }
+        `}
+        </style>
+        <button onClick={this.toggleLevel} className="highlight-level-toggle">
+          {this.state.level === 1 ? "overlight" : "backlight"}
+        </button>
+      </div>
+    );
+  }
+}
+
 export default class Toolbar extends Component {
   constructor(props) {
     super(props);
@@ -145,6 +182,7 @@ export default class Toolbar extends Component {
         </div>
         <div id="toolbar-mid">
           <ZoomControls />
+          <HighlightLevelToggle />
         </div>
         <div id="toolbar-right">
           <PageNumberControls />
