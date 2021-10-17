@@ -1,6 +1,9 @@
 import _ from "lodash";
 import fs from "fs";
 import { HighlightAnnotation } from "pdfjs-dist/build/pdf.worker";
+import { Logger } from "../helpers";
+
+const logger = new Logger("AnnotationHelper");
 
 /**
  * given a color of one of the following formats: {r: [0-255], g: [0-255], b: [0-255]};  {r: [0-1], g: [0-1], b: [0-1]}; #RRGGBB; or #RGB
@@ -188,6 +191,44 @@ export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
   return quadPoint;
 }
 
+/**
+ * given a list of quadpoints describing rectangles:
+ * first, remove any quadpoints that "jump" out of line
+ * next, combine any quadpoints that share the same y coordinates.
+ */
+function smoothQuadpointArray(quadpointArray) {
+  logger.log(quadpointArray);
+  const cleanedArray = [];
+  for (var i_ = 0; i_ < quadpointArray.length; i_++) {
+    cleanedArray.push(quadpointArray[i_]);
+    if (quadpointArray[i_][1] == quadpointArray[i_ + 2]?.[1]) {
+      if (quadpointArray[i_][1] != quadpointArray[i_ + 1][1]) {
+        i_++;
+      }
+    }
+    if (quadpointArray[i_][1] == quadpointArray[i_ + 3]?.[1]) {
+      if (quadpointArray[i_ + 1][1] != quadpointArray[i_ + 2][1]) {
+        if (quadpointArray[i_][1] != quadpointArray[i_ + 1][1]) {
+          i_ += 2;
+        }
+      }
+    }
+  }
+  const combinedArray = [cleanedArray[0]];
+  logger.log(cleanedArray);
+  for (let quad of cleanedArray) {
+    const cur = combinedArray[combinedArray.length - 1];
+    if (quad[1] == cur[1] && quad[7] == cur[7]) {
+      cur[2] = quad[2];
+      cur[6] = quad[6];
+    } else {
+      combinedArray.push(quad);
+    }
+  }
+  logger.log(combinedArray);
+  return combinedArray;
+}
+
 export function getSelectionPageNumber({ pageDiv }) {
   const pageNumber = pageDiv.getAttribute("data-page-number");
   return pageNumber;
@@ -210,7 +251,7 @@ export function currentSelection(doc) {
   const cropbox = leaf.CropBox()?.array.map((n) => n.value());
 
   const quadPoints = _.flatten(
-    nodes.map((node) => nodeToQuadpoint(node, pageDiv, cropbox || mediabox))
+    smoothQuadpointArray(nodes.map((node) => nodeToQuadpoint(node, pageDiv, cropbox || mediabox)))
   );
   return {
     pageDiv,

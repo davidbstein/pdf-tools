@@ -140,9 +140,7 @@ export default class HighlightManager {
     const toRender = _.flatten(
       highlights.map((annotation) => annotationToDivs(annotation, pageLeaf))
     );
-    logger.log(toRender);
     highlightLayerDiv.append(...toRender);
-    logger.log(highlightLayerDiv);
     return highlightLayerDiv;
   }
 
