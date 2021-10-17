@@ -9,16 +9,21 @@ import {
   setCurrentPath,
   sendMessageToActiveWindow,
 } from "./windowManagement";
+import { getConfig } from "../common/defaults";
 import os from "os";
+import fs from "fs";
 
-const DEFAULT_DIR =
-  process.env.NODE_ENV !== "production"
-    ? `${os.homedir()}/Dropbox/_Law/TEST`
-    : `${os.homedir()}/Dropbox/_Law`;
+const DEFAULT_DIR = getConfig("DEFAULT_DIR", `${os.homedir()}/Dropbox/_Law/TEST`);
+const _state = {
+  ready: false,
+  files_to_open: [],
+};
 
 function _log() {
-  // console.trace();
-  console.log("main/index.js -- ", ...arguments);
+  console.log(...arguments);
+  fs.writeFile("/tmp/stein-pdf.log", `${JSON.stringify(arguments)}\n`, { flag: "a+" }, (err) => {
+    if (err) throw err;
+  });
 }
 
 /**
@@ -32,6 +37,10 @@ app.on("open-url", (event, url) => {
 app.on("ready", () => {
   _log(`APP EVENT -- ready`);
   initializeMenu();
+  _state.ready = true;
+  for (let file of _files_to_open) {
+    createPDFWindow(file);
+  }
   const bw = createFileBrowserWindow({ filePath: DEFAULT_DIR });
   _log(bw);
 });
@@ -39,7 +48,11 @@ app.on("ready", () => {
 app.on("open-file", (event, path) => {
   _log(`APP EVENT -- open-file: ${path}`);
   event.preventDefault();
-  createPDFWindow({ filePath: path });
+  if (_state.ready) {
+    createPDFWindow({ filePath: path });
+  } else {
+    _state.files_to_open.push(path);
+  }
   _log(`trying to open ${path}`);
 });
 

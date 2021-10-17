@@ -1,0 +1,85 @@
+{
+  "DEFAULT_DIR": "/Users/stein/Dropbox/_Law",
+  "DEFAULT_TOOL_LIST": [
+    {
+      "name": "(notable)",
+      "color": "#FFFFaa",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Facts",
+      "color": "#FAF446",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Legal",
+      "color": "#FFC677",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Dissent",
+      "color": "#FFB5B0",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Disposition",
+      "color": "#94E3FC",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "History",
+      "color": "#D9C9FE",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Statute",
+      "color": "#F3A9FF",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Concurrences / Cites",
+      "color": "#deeed4",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Paper",
+      "color": "#D0D8FF",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Challenged Doc",
+      "color": "#F1F6B8",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Section ",
+      "color": "#000000",
+      "type": "UNDERLINE"
+    },
+    {
+      "name": "Case Name",
+      "color": "#669c34",
+      "type": "UNDERLINE"
+    },
+    {
+      "name": "Outline",
+      "type": "OUTLINE",
+      "color": "#0000ff"
+    },
+    {
+      "name": "Eraser",
+      "type": "ERASER",
+      "color": "#ffffff"
+    }
+  ]
+}
