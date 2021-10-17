@@ -14,7 +14,7 @@ import { Logger, emitEvent } from "@/helpers";
 import { ToolCategories } from "./AnnotationTypes";
 
 //const log = console.log;
-const logger = new Logger("HighlightManager", "green");
+const logger = new Logger("HighlightManager");
 
 const DEFAULTS = {
   clearSelection: true,
@@ -71,6 +71,7 @@ export default class HighlightManager {
 
   _doMarkupSelection(selection) {
     const action = this.docProxy.createHighlight({ ...selection, ...this.currentTool });
+    logger.log("_doMarkupSelection", action);
     action.redoFn();
     this.undoQueue.push(action);
     this.redoQueue = [];
@@ -135,11 +136,13 @@ export default class HighlightManager {
     highlightLayerDiv.classList = ["highlight-layer"];
 
     const { highlights, pageLeaf } = this.docProxy.listHighlightsForPageIdx(pageIdx);
-    logger.log(`drawing ${highlights.length} highlights for page ${pageIdx}`);
+    logger.log(`drawing ${highlights.length} highlights for page ${pageIdx}`, highlights);
     const toRender = _.flatten(
       highlights.map((annotation) => annotationToDivs(annotation, pageLeaf))
     );
+    logger.log(toRender);
     highlightLayerDiv.append(...toRender);
+    logger.log(highlightLayerDiv);
     return highlightLayerDiv;
   }
 

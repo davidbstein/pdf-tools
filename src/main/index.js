@@ -38,7 +38,7 @@ app.on("ready", () => {
   _log(`APP EVENT -- ready`);
   initializeMenu();
   _state.ready = true;
-  for (let file of _files_to_open) {
+  for (let file of _state.files_to_open) {
     createPDFWindow(file);
   }
   const bw = createFileBrowserWindow({ filePath: DEFAULT_DIR });

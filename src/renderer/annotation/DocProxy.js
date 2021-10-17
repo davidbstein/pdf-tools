@@ -53,7 +53,10 @@ import {
   PDFRef,
 } from "pdf-lib";
 import { node } from "prop-types";
+import { Logger } from "../helpers";
 import { colorToHex } from "./AnnotationHelpers";
+
+const logger = new Logger("DocProxy");
 
 function PDFObjToDict(pdfObj) {
   let obj = {
@@ -320,6 +323,7 @@ export default class DocProxy {
       ref,
       pageIdx,
     };
+    const context = this.doc.context;
     console.log(params, pageLeaf.ref, pageRef);
     return {
       removeFn: () => {
@@ -329,9 +333,10 @@ export default class DocProxy {
       },
       addFn: () => {
         console.log("add highlight");
-        const highlightRef = this.doc.context.register(highlightDict);
+        const highlightRef = context.register(highlightDict);
         params.ref = highlightRef;
         pageLeaf.addAnnot(highlightRef);
+        logger.log("added", highlightRef);
       },
       params: params,
     };

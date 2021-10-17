@@ -78,7 +78,7 @@ export default class MouseFollower extends Component {
   }
 
   handleClick(e) {
-    console.log("click", e);
+    logger.log("click", e);
   }
 
   handleSelectionChange(e) {

@@ -21,24 +21,15 @@ function outlineTreeToList(outlineRoot, current, level = 1) {
   }
 }
 
-/**
- * each node has a level, which is the depth of the node in the tree
- * given a list of nodes, place each node in the children list of its parent
- */
 function outlineListToTree(nodeList) {
-  const root = {
-    children: [],
-    level: 0,
-  };
+  const root = { children: [], level: 0 };
   let currentLevel = 0;
   const path = [root];
   for (let node of nodeList) {
     if (node.level > currentLevel) {
       path.push(node);
     } else if (node.level < currentLevel) {
-      for (let i = 0; i < currentLevel - node.level; i++) {
-        path.pop();
-      }
+      for (let i = 0; i < currentLevel - node.level; i++) path.pop();
       path.push(node);
     } else {
       path.pop();
@@ -68,8 +59,11 @@ class OutlineNode extends Component {
     if (e.button === 0) {
       return this.goToNode();
     }
+    if (e.button === 1) {
+      this.props.deleteNode(this.props.node);
+    }
     if (e.button === 2) {
-      //RIGHT CLICK
+      this.props.toggleNodeLevel(this.props.node);
     }
   }
 
@@ -84,6 +78,10 @@ class OutlineNode extends Component {
       <div className={`outline-node`}>
         <div className="outline-node-title-indent" />
         <div className="outline-node-title" onClick={this.goToNode}>
+          <div
+            className="outline-indent"
+            style={{ width: `calc(--outline-indent-px * ${node.level})` }}
+          />
           <div className={`${classlist}`}>{node.title}</div>
           {node.pageIdx ? <div className="outline-node-page-number">p. {node.pageIdx}</div> : []}
         </div>
@@ -96,19 +94,27 @@ class OutlineNode extends Component {
 export default class SortingSidebar extends Component {
   constructor(props) {
     super(props);
+    const outlineRoots = window.HighlightManager.docProxy.listSerializableOutlines();
     this.state = {
-      outlineRoots: window.HighlightManager.docProxy
-        .listSerializableOutlines()
-        .map(outlineTreeToList),
+      outlineList: outlineRoots.map(outlineTreeToList),
       pageRange: (window._pdf?._pdfViewer?.currentPageNumber || 0) - 1,
     };
     this.resize = this.resize.bind(this);
     this.handleOutlineChange = this.handleOutlineChange.bind(this);
-    this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, {
-      leading: true,
-      trailing: true,
-    });
+    this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, { trailing: true });
     window._pdf._eventBus.on("pagechanging", this.handleScroll);
+  }
+
+  addNode(node) {
+    // TODO
+  }
+
+  deleteNode(node) {
+    // TODO
+  }
+
+  toggleNodeLevel(node) {
+    // TODO
   }
 
   handleScroll() {
@@ -125,11 +131,18 @@ export default class SortingSidebar extends Component {
   }
 
   render() {
+    const sorted_nodes = _.sortBy(this.state.outlineList, "pageIdx");
     return (
       <div id="Sidebar">
         <div id="OutlineView">
-          {this.state.outlineRoots.map((outlineRoot, index) => (
-            <OutlineNode key={index} node={outlineRoot} pageRange={this.state.pageRange} />
+          {sorted_nodes.map((node, index) => (
+            <OutlineNode
+              key={index}
+              node={node}
+              deleteNode={this.deleteNode}
+              toggleNodeLevel={this.props.toggleNodeLevel}
+              pageRange={this.state.pageRange}
+            />
           ))}
         </div>
         <ResizeGrip resize={this.resize} />

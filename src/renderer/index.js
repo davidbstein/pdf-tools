@@ -4,7 +4,7 @@ import { ipcRenderer } from "electron";
 import { Logger, emitEvent } from "@/helpers";
 
 //const log = console.log;
-const logger = new Logger("@/index.js", "orange");
+const logger = new Logger("@/index.js");
 
 ipcRenderer.on("menu-clicked", (event, { command, ...detail }) => {
   logger.log(`BACKEND EVENT: ${command}`, detail);

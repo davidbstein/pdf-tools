@@ -4,20 +4,21 @@
  * color: [{r,g,b} | #rrggbb] - the color of the marker, [0-1]
  * type: Highlight | Underline | Squiggly | Strikeout | Link | FreeText | Popup | Line
  */
+
 import { colorToRGB, colorToHex } from "./AnnotationHelpers";
 import { getConfig } from "@/../common/defaults";
 export const ToolTypes = {
-  HIGHLIGHT: "HIGHLIGHT",
-  UNDERLINE: "UNDERLINE",
-  SQUIGGLY: "SQUIGGLY",
-  STRIKEOUT: "STRIKEOUT",
-  LINK: "LINK",
-  FREE_TEXT: "FREETEXT",
-  POPUP: "POPUP",
-  LINE: "LINE",
-  OUTLINE: "OUTLINE",
-  CROP: "CROP",
-  ERASER: "ERASER",
+  HIGHLIGHT: "Highlight",
+  UNDERLINE: "Underline",
+  SQUIGGLY: "Squiggly",
+  STRIKEOUT: "Strikeout",
+  LINK: "Link",
+  FREE_TEXT: "FreeText",
+  POPUP: "Popup",
+  LINE: "Line",
+  OUTLINE: "__OUTLINE__",
+  CROP: "__CROP__",
+  ERASER: "__ERASER__",
 };
 
 export const ToolCategories = {
@@ -30,6 +31,7 @@ export const ToolCategories = {
 export const ToolList = getConfig("DEFAULT_TOOL_LIST").map(function (annotationType) {
   return {
     ...annotationType,
+    type: ToolTypes[annotationType.type.toUpperCase()],
     color: colorToRGB(annotationType.color ? annotationType.color : "#0000ff"),
     colorHex: colorToHex(annotationType.color ? annotationType.color : "#0000ff"),
   };
