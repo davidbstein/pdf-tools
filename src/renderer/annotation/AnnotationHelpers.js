@@ -209,7 +209,7 @@ function smoothQuadpointArray(quadpointArray) {
     const remaining = quadpointArray.slice(i_ + 1);
     const next_idx = _.findIndex(
       remaining,
-      (test) => current[_BotR_Y] < test[_TopL_Y] || current[_TopR_Y] > test[_BotL_Y]
+      (test) => current[_BotR_Y] < test[_TopL_Y] && current[_TopR_Y] > test[_BotL_Y]
     );
     if (next_idx >= 0) i_ += next_idx;
   }

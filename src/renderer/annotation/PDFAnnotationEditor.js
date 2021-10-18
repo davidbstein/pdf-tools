@@ -24,7 +24,7 @@ export default class PDFAnnotationEditor {
     this._fileLocation = fileLocation;
     this._tempFileLocation = path.format({
       ...fpath,
-      base: `~${fpath.name}(${/*new Date().toISOString()*/ "-"}).${fpath.ext}`,
+      base: `.~${fpath.name}(${/*new Date().toISOString()*/ "-"}).${fpath.ext}`,
     });
     // bind
     window._pdf = this;

@@ -37,11 +37,12 @@ app.on("open-url", (event, url) => {
 app.on("ready", () => {
   _log(`APP EVENT -- ready`);
   initializeMenu();
-  _state.ready = true;
+  const bw = createFileBrowserWindow({ filePath: DEFAULT_DIR });
   for (let file of _state.files_to_open) {
+    _log(`opening... ${file}`);
     createPDFWindow(file);
   }
-  const bw = createFileBrowserWindow({ filePath: DEFAULT_DIR });
+  _state.ready = true;
   _log(bw);
 });
 
@@ -49,11 +50,12 @@ app.on("open-file", (event, path) => {
   _log(`APP EVENT -- open-file: ${path}`);
   event.preventDefault();
   if (_state.ready) {
+    _log(`trying to open ${path}`);
     createPDFWindow({ filePath: path });
   } else {
+    _log(`once ready I will open ${path}`);
     _state.files_to_open.push(path);
   }
-  _log(`trying to open ${path}`);
 });
 
 app.on("window-all-closed", () => {
