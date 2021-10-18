@@ -191,6 +191,10 @@ export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
   return quadPoint;
 }
 
+const [_BotL_X, _BotL_Y, _BotR_X, _BotR_Y, _TopL_X, _TopL_Y, _TopR_X, _TopR_Y] = [
+  0, 1, 2, 3, 4, 5, 6, 7,
+];
+
 /**
  * given a list of quadpoints describing rectangles:
  * first, remove any quadpoints that "jump" out of line
@@ -199,28 +203,31 @@ export function nodeToQuadpoint(node, pageDiv, [minx, miny, maxx, maxy]) {
 function smoothQuadpointArray(quadpointArray) {
   logger.log(quadpointArray);
   const cleanedArray = [];
-  for (var i_ = 0; i_ < quadpointArray.length; i_++) {
+  for (let i_ = 0; i_ < quadpointArray.length; i_++) {
     cleanedArray.push(quadpointArray[i_]);
-    if (quadpointArray[i_][1] == quadpointArray[i_ + 2]?.[1]) {
-      if (quadpointArray[i_][1] != quadpointArray[i_ + 1][1]) {
-        i_++;
-      }
-    }
-    if (quadpointArray[i_][1] == quadpointArray[i_ + 3]?.[1]) {
-      if (quadpointArray[i_ + 1][1] != quadpointArray[i_ + 2][1]) {
-        if (quadpointArray[i_][1] != quadpointArray[i_ + 1][1]) {
-          i_ += 2;
-        }
-      }
-    }
+    const current = quadpointArray[i_];
+    const remaining = quadpointArray.slice(i_ + 1);
+    const next_idx = _.findIndex(
+      remaining,
+      (test) => current[_BotR_Y] < test[_TopL_Y] || current[_TopR_Y] > test[_BotL_Y]
+    );
+    if (next_idx >= 0) i_ += next_idx;
   }
   const combinedArray = [cleanedArray[0]];
   logger.log(cleanedArray);
-  for (let quad of cleanedArray) {
+  for (let quad of cleanedArray.slice(1)) {
     const cur = combinedArray[combinedArray.length - 1];
-    if (quad[1] == cur[1] && quad[7] == cur[7]) {
-      cur[2] = quad[2];
-      cur[6] = quad[6];
+    // current base is below next top and current top is above next base: extend current
+    if (
+      cur[_BotR_Y] < quad[_TopL_Y] &&
+      cur[_TopR_Y] > quad[_BotL_Y] &&
+      cur[_TopR_X] < quad[_TopR_X] &&
+      cur[_BotR_X] < quad[_BotR_X]
+    ) {
+      cur[_BotR_X] = quad[_BotR_X];
+      cur[_TopR_X] = quad[_TopR_X];
+      cur[_BotR_Y] = quad[_BotR_Y];
+      cur[_TopR_Y] = quad[_TopR_Y];
     } else {
       combinedArray.push(quad);
     }

@@ -81,7 +81,7 @@ export function createFileBrowserWindow({ filePath, debug = false }) {
   return newWindow;
 }
 
-export function createPDFWindow({ filePath, debug = IS_DEVELOPMENT }) {
+export function createPDFWindow({ filePath, debug = false }) {
   const newWindow = _createNewWindow(filePath, { width: 1600, height: 1300 });
   newWindow.setRepresentedFilename(filePath);
   newWindow.setDocumentEdited(false);
