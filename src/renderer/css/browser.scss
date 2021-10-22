@@ -52,7 +52,7 @@
 
 @keyframes expand-in {
   0% {
-    height: 0px;
+    height: default; /*0px;*/
     background: grey;
     overflow-y: hidden;
   }

@@ -69,7 +69,7 @@ export default class MouseFollower extends Component {
 
   componentDidMount() {
     const elem = document.getElementById("Viewer");
-    elem.onmousemove = this.handleMouseMove;
+    elem.addEventListener("mousemove", this.handleMouseMove);
     elem.addEventListener("mousedown", this.handleMouseDown);
     elem.addEventListener("mouseup", this.handleMouseUp);
     elem.addEventListener("mouseleave", this.handleMouseLeave);
@@ -78,6 +78,8 @@ export default class MouseFollower extends Component {
   }
 
   handleClick(e) {
+    // do not overload on main PDF view if in a selection mode.
+    // there's default selection stuff we want to preserve.
     logger.log("click", e);
   }
 

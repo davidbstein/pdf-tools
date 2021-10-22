@@ -29,7 +29,7 @@ function runTests(hm) {
 }
 
 export default class HighlightManager {
-  constructor(pdfViewer) {
+  constructor(myPDFAnnotationEditor) {
     if (window.HighlightManager) return;
     else window.HighlightManager = this;
 
@@ -38,8 +38,7 @@ export default class HighlightManager {
 
     //instance internals
     _.debounce(this._doMarkupSelection, 100, { trailing: true });
-    this._pdf = pdfViewer;
-    this._pendingSelectionChange = false;
+    this.annotationEditor = myPDFAnnotationEditor;
     this.highlightDivs = {};
     this.annotationMap = {};
     this.undoQueue = [];
@@ -51,13 +50,9 @@ export default class HighlightManager {
   }
 
   async _initializeDocument(data) {
-    const container = this._pdf._container;
+    const container = this.annotationEditor._container;
     this.docProxy = await DocProxy.createDocProxy(data);
-    window.addEventListener("pdf-selection-made", this._processSelectionComplete);
-    window.addEventListener("backend-undo", this._processUndo);
-    this._pdf.listenToPageRender(this._detectPageRender);
-    this._pdf.listenToPageChange(this._detectPageChange);
-    console.warn("%cYOU MUST DELETE THIS IT'S FOR TESTING", "color: red", runTests(this));
+    emitEvent("highlight-manager-loaded");
   }
 
   _initStyleTag() {
@@ -76,7 +71,7 @@ export default class HighlightManager {
     this.undoQueue.push(action);
     this.redoQueue = [];
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
-    this._pdf.autoSave();
+    this.annotationEditor.autoSave();
     this._drawPage(action.params.pageIdx);
   }
 
@@ -91,13 +86,13 @@ export default class HighlightManager {
   }
 
   _detectPageRender({ pageNumber, ...rest }) {
-    //logger.log("page render", pageNumber, rest);
+    logger.debug("page render", pageNumber, rest);
     this._updatePages();
     this._drawPage(pageNumber - 1);
   }
 
   _detectPageChange({ pageNumber, previous, ...rest }) {
-    logger.log(`current page: ${pageNumber}, last page: ${previous}`);
+    logger.debug(`current page: ${pageNumber}, last page: ${previous}`);
     this._updatePages();
   }
 
@@ -117,10 +112,8 @@ export default class HighlightManager {
     }
   }
 
-  _clearPage(pageIdx) {}
-
   _drawPage(pageIdx) {
-    const pageDiv = this._pdf._pdfViewer._pages[pageIdx].div;
+    const pageDiv = this.annotationEditor._pdfViewer._pages[pageIdx].div;
     if (pageDiv.getElementsByClassName(`highlight-layer`)[0]) {
       pageDiv.getElementsByClassName(`highlight-layer`)[0].remove();
     }
@@ -145,7 +138,6 @@ export default class HighlightManager {
   }
 
   _processSelectionComplete() {
-    this._pendingSelectionChange = false;
     const selection = currentSelection(this.docProxy);
     if (ToolCategories.MARKUP_TYPES.includes(this.currentTool.type)) {
       if (selection != null) this._doMarkupSelection(selection);
@@ -165,12 +157,14 @@ export default class HighlightManager {
     this._drawPage(action.params.pageIdx);
   }
 
-  async getPDFBytes(options) {
-    return await this.docProxy.getDocAsBytes();
-  }
-
-  async getPDFBytesNoAnnots(options) {
-    return await this.docProxy.getDocAsBytesNoAnnots();
+  _processRedo(e) {
+    logger.log("processing redo");
+    if (this.redoQueue.length === 0) return;
+    const action = this.redoQueue.pop();
+    action.redoFn();
+    this.undoQueue.push(action);
+    this._updatePages();
+    this._drawPage(action.params.pageIdx);
   }
 
   _broadcastToolChange() {
@@ -196,6 +190,7 @@ export default class HighlightManager {
   }
 
   _setMarkupTool(tool) {
+    return logger.log("MARKUP CSS SUPPRESSED!");
     const rawCSS = `:root { 
       --highlight-color : ${
         tool.type == ToolTypes.HIGHLIGHT
@@ -215,15 +210,35 @@ export default class HighlightManager {
     return this._currentTool;
   }
 
+  async getPDFBytes(options) {
+    return await this.docProxy.getDocAsBytes();
+  }
+
+  async getPDFBytesNoAnnots(options) {
+    return await this.docProxy.getDocAsBytesNoAnnots();
+  }
+
   redo() {
-    const action = this.redoQueue.pop();
-    action.redoFn();
-    this.redoQueue = [];
+    this._processRedo();
   }
 
   undo() {
-    const action = this.undoQueue.pop();
-    action.undoFn();
-    this.redoQueue.push(action);
+    this._processUndo();
+  }
+
+  processCurrentSelection() {
+    this._processSelectionComplete();
+  }
+
+  previewCurrentSelection() {
+    logger.warn("previewCurrentSelection not implemented");
+  }
+
+  handlePageRendered(e) {
+    this._detectPageRender(e);
+  }
+
+  handlePageChanging(e) {
+    this._detectPageChange(e);
   }
 }

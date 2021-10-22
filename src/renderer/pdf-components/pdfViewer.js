@@ -45,13 +45,9 @@ export default class PdfViewer extends Component {
     this.setState({ annotationbar_width: newWidth });
   }
   readyForPDF(target) {
-    if (window._pdf) {
-      this._pdfEditor = window._pdf;
-    }
-    this._pdfEditor = new PDFAnnotationEditor(this.props.url, target);
-    this._eventBus = this._pdfEditor._eventBus;
-    this._eventBus.on("pagesinit", (e) => {
-      this.setState({ scale: this._pdfEditor.currentScale });
+    this.pdfEditor = window._pdf || new PDFAnnotationEditor(this.props.url, target, this);
+    this.pdfEditor.pdfjsEventBus.on("pagesinit", (e) => {
+      this.setState({ scale: this.pdfEditor.currentScale });
       this.setState({ pdf_ready: true });
       if (this.props.onInit) {
         this.props.onInit({});

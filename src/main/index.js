@@ -89,6 +89,12 @@ ipcMain.on("navigateTo", (event, { target, _id }) => {
   event.returnValue = curPath;
 });
 
+ipcMain.on("setSaveState", (event, { saveState, _id }) => {
+  _log(`IPC -- setSaveState: ${_id} ===> ${saveState}`);
+  setWindowSaveFlag(_id, saveState);
+  event.returnValue = saveState;
+});
+
 ipcMain.on("openFile", (event, { target, _id }) => {
   createPDFWindow({ filePath: target });
   _log(`IPC -- openFile: ${_id}  -- ${target} ===> ${3}`);

@@ -12,6 +12,13 @@ run `npm run dev` in a terminal.
 
 ## current tasklist:
 
+- [ ] OUTLINES
+- [ ] FIX BUILD / "Open with"
+- [ ] MENU
+- [ ] refactor out any stein-specific constants: config file only!
+- [ ] refactor all event listeners into PDFAnnotationEditor.
+  - basic idea: pdfViewer implements the visitor pattern during bootstrapping. PDFAnnotationEditor serves as core controller.
+
 ### file browser
 
 - [x] live file updates
@@ -30,7 +37,7 @@ run `npm run dev` in a terminal.
 - UI
   - [x] outline view
   - [x] fast-browse
-  - [ ] live update current on scroll
+  - [x] live update current on scroll
   - [ ] outline editing
 
 ### highlighting and annotations
@@ -61,9 +68,9 @@ run `npm run dev` in a terminal.
 
 ### features
 
-- [ ] read config from file
+- [x] read config from file
   - [x] tool list
-  - [ ] view defaults
+  - [x] view defaults
 - [ ] bluebook my current highlight.
 - [ ] docx reader? html reader?
 - [ ] finder integration?

@@ -1,4 +1,5 @@
 import CryptoJS from "crypto-js";
+import * as sourceStackTrace from "sourcemapped-stacktrace";
 
 /**
  * generate three different random numbers between 0 and 1 from a seed string, use those to
@@ -24,7 +25,7 @@ function brightnessOfHexColor(color) {
  * include the stacktrace in a collapsed group.
  */
 export class Logger {
-  constructor(label, color) {
+  constructor(label, { color, debug = false } = {}) {
     this.label = label;
     // if no color is provided, generate a color based on the label
     this.color = color || generateColorFromSeed(label);
@@ -32,27 +33,48 @@ export class Logger {
     this.backgroundColor = brightness < 128 ? "white" : "black";
   }
 
-  getStackTrace() {
-    const stack = new Error().stack;
+  async getStackTrace() {
+    const minifiedStack = new Error().stack;
+    const stack = minifiedStack; //await sourceStackTrace.mapStackTrace(minifiedStack);
     const lines = stack.split("\n");
     const stackTrace = lines.slice(3);
     return stackTrace.join("\n");
   }
 
-  call(...args) {
+  async log(...args) {
     console.groupCollapsed(
       `%c[${this.label}]`,
-      `color: ${this.color}; background: ${this.backgroundColor}`,
+      `color: ${this.color}; background: ${this.backgroundColor};`,
       ...args
     );
-    console.log(this.getStackTrace());
+    console.log(await this.getStackTrace());
     console.groupEnd();
     return;
   }
 
-  log(...args) {
-    this.call(...args);
-    return;
+  _subcall(method, ...args) {
+    if (this.debug) {
+      console[method](
+        `%c[${this.label} ${method}]`,
+        `color: ${this.color}; background: ${this.backgroundColor};`,
+        ...args
+      );
+      console.groupCollapsed();
+      console[method](this.getStackTrace());
+      console.groupEnd();
+    }
+  }
+
+  debug(...args) {
+    this._subcall("debug", ...args);
+  }
+
+  warn(...args) {
+    this._subcall("warn", ...args);
+  }
+
+  info(...args) {
+    this._subcall("info", ...args);
   }
 }
 

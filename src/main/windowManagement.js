@@ -57,6 +57,16 @@ export function setCurrentPath(windowId, path) {
   return (_CurrentPaths[windowId] = path);
 }
 
+export function setWindowSaveFlag(windowId, isSaved) {
+  const window = getWindowRefs()[windowId];
+  if (!window) return;
+  if (isSaved) {
+    window.setTitle(window.getTitle().replace("*", ""));
+  } else {
+    window.setTitle(`* ${window.getTitle()}`);
+  }
+}
+
 function _createNewWindow(filePath, windowPreferences = {}, webPreferences = {}) {
   const { width, height, x, y } = { ...DEFAULT_WINDOW_PREFERENCES, ...windowPreferences };
   webPreferences = { ...DEFAULT_WEB_PREFERENCES, ...webPreferences };

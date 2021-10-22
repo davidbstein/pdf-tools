@@ -29,6 +29,8 @@
     "react-dom": "^17.0.2",
     "sass": "*",
     "sass-loader": "10",
+    "source-map": "*",
+    "sourcemapped-stacktrace": "^1.1.11",
     "worker-loader": "^3.0.8"
   },
   "repository": {
@@ -84,7 +86,5 @@
     "copyright": "Copyright David Stein 2021",
     "productName": "Stein's PDF Notetaking Tools"
   },
-  "dependencies": {
-    "source-map-support": "^0.5.20"
-  }
+  "dependencies": {}
 }

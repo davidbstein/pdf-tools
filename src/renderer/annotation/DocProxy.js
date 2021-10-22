@@ -281,16 +281,6 @@ export default class DocProxy {
     return await this.doc.save({ useObjectStreams: false });
   }
 
-  async getDocAsBytes(options) {
-    return await this.doc.save({ useObjectStreams: false });
-  }
-
-  async genPDF() {
-    await this.doc.flush();
-    let offset = 0;
-    const buffer = new Uint8Array(size);
-  }
-
   /**
    * type: Highlight,  Underline,  Squiggly
    * QuadPoints: [x1, y1, x2, y2, x3, y3, x4, y4 ...]
