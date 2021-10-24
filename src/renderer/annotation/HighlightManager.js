@@ -96,6 +96,10 @@ export default class HighlightManager {
     this._updatePages();
   }
 
+  _clearPage(page) {
+    logger.warn("this is a null-op");
+  }
+
   _updatePages() {
     const visiblePages = _pdf._pdfViewer
       ._getVisiblePages()
@@ -190,7 +194,7 @@ export default class HighlightManager {
   }
 
   _setMarkupTool(tool) {
-    return logger.log("MARKUP CSS SUPPRESSED!");
+    //return logger.log("MARKUP CSS SUPPRESSED!");
     const rawCSS = `:root { 
       --highlight-color : ${
         tool.type == ToolTypes.HIGHLIGHT

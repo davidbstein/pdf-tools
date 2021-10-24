@@ -1,5 +1,4 @@
 import CryptoJS from "crypto-js";
-import * as sourceStackTrace from "sourcemapped-stacktrace";
 
 /**
  * generate three different random numbers between 0 and 1 from a seed string, use those to
@@ -20,6 +19,45 @@ function brightnessOfHexColor(color) {
 }
 
 /**
+ * given two hex color strings of the form #RRGGBB - return the average of the two colors
+ */
+function averageColor(color1, color2, weight = 0.7) {
+  const rgb1 = parseInt(color1.replace("#", ""), 16);
+  const rgb2 = parseInt(color2.replace("#", ""), 16);
+  const r = (rgb1 >> 0b10000) & 0xff;
+  const g = (rgb1 >> 0b100) & 0xff;
+  const b = (rgb1 >> 0b0) & 0xff;
+  const r2 = (rgb2 >> 0b10000) & 0xff;
+  const g2 = (rgb2 >> 0b100) & 0xff;
+  const b2 = (rgb2 >> 0b0) & 0xff;
+  const r3 = Math.round(r * (1 - weight) + r2 * weight);
+  const g3 = Math.round(g * (1 - weight) + g2 * weight);
+  const b3 = Math.round(b * (1 - weight) + b2 * weight);
+  return `#${[r3, g3, b3].map((x) => x.toString(16)).join("")}`;
+}
+
+const _callerRegexp = `at (?<path>(.+?\.)+(?<fnName>.*?)) (?<aliasInfo>\[as (?<aliasName>.+?)\])? `;
+const _callerMatch = new RegExp(_callerRegexp);
+
+function getCaller(trace) {
+  const line = trace.split("\n")[1];
+  const groups = {
+    ...{
+      path: "",
+      fnName: "",
+      aliasName: " ",
+      srcmapRow: "",
+      srcmapCol: "",
+      link: "",
+    },
+    ...line.match(/at (?<path>.+?\.)+(?<fnName>.*?)[ $]/)?.groups,
+    ...line.match(/\[as(?<aliasName> .+?)\]/)?.groups,
+    ...line.match(/\((?<link>.+?\:(?<srcmapRow>\d+)\:(?<srcmapCol>\d+)\))/)?.groups,
+  };
+  return groups;
+}
+
+/**
  * logs to console, adding a timestamp, the label of the file, the line number
  * if the only argument is a string, set the color to red
  * include the stacktrace in a collapsed group.
@@ -27,13 +65,17 @@ function brightnessOfHexColor(color) {
 export class Logger {
   constructor(label, { color, debug = false } = {}) {
     this.label = label;
+    const b = 0.35; // brightness constant. 0<b<.5;
     // if no color is provided, generate a color based on the label
-    this.color = color || generateColorFromSeed(label);
-    const brightness = brightnessOfHexColor(this.color);
-    this.backgroundColor = brightness < 128 ? "white" : "black";
+    const c = color || generateColorFromSeed(label);
+    const weight = brightnessOfHexColor(c) / 256;
+    const colorWeight = Math.min(1, Math.max(0, b, 1 - b - weight));
+    const backgroundWeight = Math.min(1, Math.max(0, b, weight - b));
+    this.color = averageColor(c, "#ffffff", colorWeight);
+    this.backgroundColor = averageColor(c, "#000000", backgroundWeight);
   }
 
-  async getStackTrace() {
+  getStackTrace() {
     const minifiedStack = new Error().stack;
     const stack = minifiedStack; //await sourceStackTrace.mapStackTrace(minifiedStack);
     const lines = stack.split("\n");
@@ -41,40 +83,40 @@ export class Logger {
     return stackTrace.join("\n");
   }
 
-  async log(...args) {
-    console.groupCollapsed(
-      `%c[${this.label}]`,
-      `color: ${this.color}; background: ${this.backgroundColor};`,
-      ...args
-    );
-    console.log(await this.getStackTrace());
-    console.groupEnd();
-    return;
-  }
-
-  _subcall(method, ...args) {
-    if (this.debug) {
-      console[method](
-        `%c[${this.label} ${method}]`,
+  _subcall(method, color, bg, args, force = false) {
+    if (force || this.debug) {
+      const trace = this.getStackTrace();
+      const caller = getCaller(trace);
+      console.groupCollapsed(
+        `%c[${method} ${new Date().toLocaleTimeString()}]%c ${" ".repeat(7 - method.length)} %c[${
+          this.label
+        }.${caller.fnName}${caller.aliasName}:${caller.srcmapRow}:${caller.srcmapCol}]`,
+        `color: ${color}; background: ${bg};`,
+        `color: default; background: default;`,
         `color: ${this.color}; background: ${this.backgroundColor};`,
-        ...args
+        args[0],
+        `(${caller.link})`
       );
-      console.groupCollapsed();
-      console[method](this.getStackTrace());
+      console.log(...args);
+      console.warn(trace);
       console.groupEnd();
     }
   }
 
-  debug(...args) {
-    this._subcall("debug", ...args);
+  log() {
+    this._subcall("🪵 log", "#CCC", "#444", arguments, true);
   }
 
-  warn(...args) {
-    this._subcall("warn", ...args);
+  debug() {
+    this._subcall("🐞 debug", "#0F0", "#060", arguments);
   }
 
-  info(...args) {
-    this._subcall("info", ...args);
+  warn() {
+    this._subcall("⚠️ warn", "#FF0", "#660", arguments);
+  }
+
+  info() {
+    this._subcall("ℹ️ info", "#00F", "#006", arguments);
   }
 }
 

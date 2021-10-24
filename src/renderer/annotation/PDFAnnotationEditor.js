@@ -20,7 +20,7 @@ export default class PDFAnnotationEditor {
       renderer: "svg" || "canvas",
       annotationMode: 0,
     });
-    this.pdfViewer._buffer.resize(150);
+    this.pdfViewer._buffer.resize(500);
     const fpath = path.parse(fileLocation);
     this._fileLocation = fileLocation;
     this._tempFileLocation = path.format({
@@ -33,8 +33,12 @@ export default class PDFAnnotationEditor {
     window.PDFAnnotationEditor = this;
 
     // bind
-    for (let _method of Object.getOwnPropertyNames(this.__proto__))
-      this[_method] = _method != "constructor" ? this[_method]?.bind(this) : 0;
+    const descriptors = Object.getOwnPropertyDescriptors(this.__proto__);
+    for (let _method in descriptors)
+      if (typeof descriptors[_method].value === "function" && _method !== "constructor") {
+        this[_method] = this[_method]?.bind(this);
+        console.log(_method);
+      }
 
     // debouncers
     const _debounceSettings = { leading: false, trailing: true };
@@ -50,7 +54,7 @@ export default class PDFAnnotationEditor {
 
   get _eventBus() {
     logger.warn("TODO: KILL THIS REFERENCE");
-    this.pdfjsEventBus;
+    return this.pdfjsEventBus;
   }
 
   get _pdfViewer() {
@@ -59,9 +63,10 @@ export default class PDFAnnotationEditor {
   }
 
   async _initialize() {
+    logger.log("initializing...");
+    await this._initialize_listeners();
     const documentFilebuffer = await this._initialize_document();
     await this._initialize_annotation_manager(documentFilebuffer);
-    await this._initialize_listeners();
   }
 
   async _initialize_document() {
@@ -102,7 +107,7 @@ export default class PDFAnnotationEditor {
       logger.log("update view area");
     });
 
-    window.addEventListener("highligh-manager-loaded", () => {
+    window.addEventListener("highlight-manager-loaded", () => {
       logger.log("highligh manager loaded! adding listeners...");
       this.pdfjsEventBus.on("pagerendered", this.highlightManager.handlePageRendered);
       this.pdfjsEventBus.on("pagechanging", this.highlightManager.handlePageChanging);
