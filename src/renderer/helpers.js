@@ -6,15 +6,17 @@ import CryptoJS from "crypto-js";
  */
 function generateColorFromSeed(seed) {
   const hash = CryptoJS.MD5(seed);
-  const [r, g, b] = hash.words.slice(0, 3).map((x) => x & 0xff);
-  return "#" + ((1 << 24) + r * 0x010000 + g * 0x100 + b * 0x1).toString(16).slice(1);
+  return (
+    "#" +
+    ((1 << 24) + hash.words.reduce((prev, cur) => (prev * cur) % 0xffffff)).toString(16).slice(1)
+  );
 }
 
 function brightnessOfHexColor(color) {
   const rgb = parseInt(color.replace("#", ""), 16);
-  const r = (rgb >> 16) & 0xff;
-  const g = (rgb >> 8) & 0xff;
-  const b = (rgb >> 0) & 0xff;
+  const r = (rgb >> 0b10000) & 0xff;
+  const g = (rgb >> 0b100) & 0xff;
+  const b = (rgb >> 0b0) & 0xff;
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
@@ -45,7 +47,7 @@ function getCaller(trace) {
     ...{
       path: "",
       fnName: "",
-      aliasName: " ",
+      aliasName: "",
       srcmapRow: "",
       srcmapCol: "",
       link: "",
@@ -65,14 +67,14 @@ function getCaller(trace) {
 export class Logger {
   constructor(label, { color, debug = false } = {}) {
     this.label = label;
-    const b = 0.35; // brightness constant. 0<b<.5;
+    const t = 0.2; // brightness target constant. 0<t<.5;
     // if no color is provided, generate a color based on the label
     const c = color || generateColorFromSeed(label);
-    const weight = brightnessOfHexColor(c) / 256;
-    const colorWeight = Math.min(1, Math.max(0, b, 1 - b - weight));
-    const backgroundWeight = Math.min(1, Math.max(0, b, weight - b));
-    this.color = averageColor(c, "#ffffff", colorWeight);
-    this.backgroundColor = averageColor(c, "#000000", backgroundWeight);
+    const b = brightnessOfHexColor(c) / 256;
+    const colorWeight = Math.min(1, Math.max(0, (1 - t) / b));
+    const backgroundWeight = Math.min(1, Math.max(0, t / b));
+    this.color = averageColor("#ffffff", c, colorWeight);
+    this.backgroundColor = averageColor("#000000", c, backgroundWeight);
   }
 
   getStackTrace() {
@@ -87,15 +89,18 @@ export class Logger {
     if (force || this.debug) {
       const trace = this.getStackTrace();
       const caller = getCaller(trace);
+      const spacer = " ".repeat(Math.max(0, 8 - method.length));
+      const marker = `[${method}${spacer}${new Date().toLocaleTimeString()}]`;
+      const callerLabel = `[${this.label}.${caller.fnName}${caller.aliasName}:${caller.srcmapRow}:${caller.srcmapCol}]`;
+      const preview = typeof args[0] == "string" ? args[0] : "<object>";
+      const link = `(${caller.link})`;
       console.groupCollapsed(
-        `%c[${method} ${new Date().toLocaleTimeString()}]%c ${" ".repeat(7 - method.length)} %c[${
-          this.label
-        }.${caller.fnName}${caller.aliasName}:${caller.srcmapRow}:${caller.srcmapCol}]`,
-        `color: ${color}; background: ${bg};`,
-        `color: default; background: default;`,
-        `color: ${this.color}; background: ${this.backgroundColor};`,
-        args[0],
-        `(${caller.link})`
+        `%c${marker}%c %c${callerLabel} %c${preview}%c${link}`,
+        `color: ${color}; background: ${bg};`, //marker
+        `color: default; background: default;`, //space
+        `color: ${this.color}; background: ${this.backgroundColor};`, //caller
+        `color: white; background: ${bg};`, //preview
+        `color: default; font-size: .8em; text-align: right; padding-left: 4em;` //link
       );
       console.log(...args);
       console.warn(trace);
@@ -112,11 +117,11 @@ export class Logger {
   }
 
   warn() {
-    this._subcall("⚠️ warn", "#FF0", "#660", arguments);
+    this._subcall("🚧 warn", "#FF0", "#660", arguments);
   }
 
   info() {
-    this._subcall("ℹ️ info", "#00F", "#006", arguments);
+    this._subcall("ℹ️ info", "#44F", "#006", arguments);
   }
 }
 

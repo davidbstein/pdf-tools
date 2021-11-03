@@ -12,7 +12,7 @@ function outlineToBreadcrumb(outline, pageIdx) {
       .sort((a, b) => b.pageIdx - a.pageIdx)[0];
     breadcrumb.push(current.title);
   }
-  return breadcrumb;
+  return breadcrumb.map((title, idx) => (typeof title === "string" ? title : idx));
 }
 
 class CurrentPath extends Component {
@@ -25,11 +25,11 @@ class CurrentPath extends Component {
       leading: false,
       trailing: true,
     });
-    window._pdf._eventBus.on("pagechanging", this.handleScroll);
+    window._pdf.pdfjsEventBus.on("pagechanging", this.handleScroll);
   }
   handleScroll() {
     const outlineRoot = window.HighlightManager.docProxy.listSerializableOutlines();
-    const pageIdx = window._pdf._pdfViewer.currentPageNumber - 1;
+    const pageIdx = window._pdf.pdfViewer.currentPageNumber - 1;
     this.setState({
       currentPath: outlineToBreadcrumb(outlineRoot?.[0], pageIdx),
     });
@@ -39,7 +39,6 @@ class CurrentPath extends Component {
       <div className="toolbar-item current-path">
         {this.state.currentPath.map((title, idx) => (
           <span className="breadcrumb-item" key={idx}>
-            {" "}
             <span className="breadcrumb-title">{title}</span>
             <span className="breadcrumb-separator">/</span>
           </span>
@@ -54,9 +53,9 @@ class PageNumberControls extends Component {
     super(props);
     this.state = {
       pageNumber: props.pageNumber,
-      pageCount: window._pdf._pdfViewer.pagesCount,
+      pageCount: window._pdf.pdfViewer.pagesCount,
     };
-    window._pdf._eventBus.on("pagechanging", this.handlePageChange.bind(this));
+    window._pdf.pdfjsEventBus.on("pagechanging", this.handlePageChange.bind(this));
     this.up = this.up.bind(this);
     this.down = this.down.bind(this);
     this.changePageNumber = this.changePageNumber.bind(this);
@@ -68,7 +67,7 @@ class PageNumberControls extends Component {
   }
   changePageNumber(e) {
     const pageNumber = parseInt(e.target.value);
-    window._pdf._pdfViewer.currentPageNumber = pageNumber;
+    window._pdf.pdfViewer.currentPageNumber = pageNumber;
   }
   up() {}
   down() {}
@@ -100,7 +99,7 @@ class ZoomControls extends Component {
     this.state = {
       zoom: 1,
     };
-    window._pdf._eventBus.on("scalechanging", this.handleZoomChange.bind(this));
+    window._pdf.pdfjsEventBus.on("scalechanging", this.handleZoomChange.bind(this));
     this.zoomIn = this.zoomIn.bind(this);
     this.zoomOut = this.zoomOut.bind(this);
   }
@@ -109,10 +108,10 @@ class ZoomControls extends Component {
     this.setState({ zoom: scale });
   }
   zoomIn() {
-    window._pdf._pdfViewer._setScale(this.state.zoom + 0.1);
+    window._pdf.pdfViewer._setScale(this.state.zoom + 0.1);
   }
   zoomOut() {
-    window._pdf._pdfViewer._setScale(this.state.zoom - 0.1);
+    window._pdf.pdfViewer._setScale(this.state.zoom - 0.1);
   }
   render() {
     const { zoom } = this.state;

@@ -12,7 +12,7 @@ ipcRenderer.on("menu-clicked", (event, { command, ...detail }) => {
 });
 
 const last_save_action = {
-  message: "",
+  message: "save",
 };
 
 window.addEventListener("backend-close", ({ detail }) => {

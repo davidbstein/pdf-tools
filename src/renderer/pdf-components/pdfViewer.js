@@ -8,6 +8,7 @@ import PDFAnnotationEditor from "@/annotation/PDFAnnotationEditor";
 import React, { Component } from "react";
 import "pdfjs-dist/web/pdf_viewer.css";
 import "@/css/pdf.scss";
+import { getCurrentPath } from "../actions";
 
 export default class PdfViewer extends Component {
   constructor(props) {
@@ -55,6 +56,7 @@ export default class PdfViewer extends Component {
     });
   }
   render() {
+    const { current_page_idx, current_page_num, outline, current_zoom } = this.state;
     return (
       <div className="PdfViewer">
         <style>

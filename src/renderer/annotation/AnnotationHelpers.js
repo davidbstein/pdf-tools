@@ -201,7 +201,6 @@ const [_BotL_X, _BotL_Y, _BotR_X, _BotR_Y, _TopL_X, _TopL_Y, _TopR_X, _TopR_Y] =
  * next, combine any quadpoints that share the same y coordinates.
  */
 function smoothQuadpointArray(quadpointArray) {
-  logger.log(quadpointArray);
   const cleanedArray = [];
   for (let i_ = 0; i_ < quadpointArray.length; i_++) {
     cleanedArray.push(quadpointArray[i_]);
@@ -214,7 +213,6 @@ function smoothQuadpointArray(quadpointArray) {
     if (next_idx >= 0) i_ += next_idx;
   }
   const combinedArray = [cleanedArray[0]];
-  logger.log(cleanedArray);
   for (let quad of cleanedArray.slice(1)) {
     const cur = combinedArray[combinedArray.length - 1];
     // current base is below next top and current top is above next base: extend current
@@ -232,7 +230,6 @@ function smoothQuadpointArray(quadpointArray) {
       combinedArray.push(quad);
     }
   }
-  logger.log(combinedArray);
   return combinedArray;
 }
 

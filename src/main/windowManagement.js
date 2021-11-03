@@ -59,11 +59,12 @@ export function setCurrentPath(windowId, path) {
 
 export function setWindowSaveFlag(windowId, isSaved) {
   const window = getWindowRefs()[windowId];
+  const path = getCurrentPath(windowId);
   if (!window) return;
   if (isSaved) {
-    window.setTitle(window.getTitle().replace("*", ""));
+    window.setTitle(path);
   } else {
-    window.setTitle(`* ${window.getTitle()}`);
+    window.setTitle(`* ${path}`);
   }
 }
 

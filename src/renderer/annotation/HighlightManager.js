@@ -66,7 +66,7 @@ export default class HighlightManager {
 
   _doMarkupSelection(selection) {
     const action = this.docProxy.createHighlight({ ...selection, ...this.currentTool });
-    logger.log("_doMarkupSelection", action);
+    logger.debug(action);
     action.redoFn();
     this.undoQueue.push(action);
     this.redoQueue = [];
@@ -101,7 +101,7 @@ export default class HighlightManager {
   }
 
   _updatePages() {
-    const visiblePages = _pdf._pdfViewer
+    const visiblePages = _pdf.pdfViewer
       ._getVisiblePages()
       .views.map((pageView) => pageView.view.pdfPage._pageIndex);
     const remaining = _.intersection(this.visiblePages, visiblePages);
@@ -117,7 +117,7 @@ export default class HighlightManager {
   }
 
   _drawPage(pageIdx) {
-    const pageDiv = this.annotationEditor._pdfViewer._pages[pageIdx].div;
+    const pageDiv = this.annotationEditor.pdfViewer._pages[pageIdx].div;
     if (pageDiv.getElementsByClassName(`highlight-layer`)[0]) {
       pageDiv.getElementsByClassName(`highlight-layer`)[0].remove();
     }
@@ -133,7 +133,7 @@ export default class HighlightManager {
     highlightLayerDiv.classList = ["highlight-layer"];
 
     const { highlights, pageLeaf } = this.docProxy.listHighlightsForPageIdx(pageIdx);
-    logger.log(`drawing ${highlights.length} highlights for page ${pageIdx}`, highlights);
+    logger.info(`drawing ${highlights.length} highlights for page ${pageIdx}`, highlights);
     const toRender = _.flatten(
       highlights.map((annotation) => annotationToDivs(annotation, pageLeaf))
     );
@@ -152,7 +152,7 @@ export default class HighlightManager {
   }
 
   _processUndo(e) {
-    logger.log("processing undo");
+    logger.debug("processing undo");
     if (this.undoQueue.length === 0) return;
     const action = this.undoQueue.pop();
     action.undoFn();
@@ -162,7 +162,7 @@ export default class HighlightManager {
   }
 
   _processRedo(e) {
-    logger.log("processing redo");
+    logger.debug("processing redo");
     if (this.redoQueue.length === 0) return;
     const action = this.redoQueue.pop();
     action.redoFn();

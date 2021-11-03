@@ -14,7 +14,7 @@ class OutlineNode extends Component {
       dragX: 0,
       dragY: 0,
     };
-    logger.log(props);
+    logger.log("OutlineNode props", props);
     this.goToNode = this.goToNode.bind(this);
     this.onDragStart = this.onDragStart.bind(this);
     this.onDragOver = this.onDragOver.bind(this);
@@ -77,42 +77,48 @@ class OutlineNode extends Component {
 
   render() {
     const { node, currentPath = "", level = 0 } = this.props;
+    const draggableTitleDiv = (
+      <div
+        className={`title-name ${this.state.dragOver ? "dragOver" : ""} ${
+          node.pageIdx >= this.props.pageRange[0] ? "later-than-visible-start" : ""
+        } ${node.pageIdx <= this.props.pageRange[1] ? "earlier-than-visible-end" : ""}`}
+        draggable="true"
+        onDragOver={this.onDragOver}
+        onDragStart={this.onDragStart}
+        onDragEnd={this.onDragEnd}
+        onDragEnter={this.onDragEnter}
+        onDragExit={this.onDragExit}
+        onDragLeave={this.onDragExit}
+        onDrop={this.onDrop}
+      >
+        {typeof node.title == "string" ? node.title : "-"}
+      </div>
+    );
+
+    let pageNumber;
+    if (node.pageIdx)
+      pageNumber = <div className="outline-node-page-number">p. {node.pageIdx}</div>;
+    else pageNumber = <div />;
+
+    const subnodes = node.children.map((node, index) => {
+      return (
+        <OutlineNode
+          key={index}
+          node={node}
+          currentPath={currentPath}
+          level={level + 1}
+          pageRange={this.props.pageRange}
+        />
+      );
+    });
+
     return (
       <div className={`outline-node`}>
         <div className="outline-node-title-indent" />
         <div className="outline-node-title" onClick={this.goToNode}>
-          <div
-            className={`title-name ${this.state.dragOver ? "dragOver" : ""} ${
-              node.pageIdx >= this.props.pageRange[0] ? "later-than-visible-start" : ""
-            } ${node.pageIdx <= this.props.pageRange[1] ? "earlier-than-visible-end" : ""}`}
-            draggable="true"
-            onDragOver={this.onDragOver}
-            onDragStart={this.onDragStart}
-            onDragEnd={this.onDragEnd}
-            onDragEnter={this.onDragEnter}
-            onDragExit={this.onDragExit}
-            onDragLeave={this.onDragExit}
-            onDrop={this.onDrop}
-          >
-            {node.title}
-          </div>
-          {node.pageIdx ? (
-            <div className="outline-node-page-number">p. {node.pageIdx}</div>
-          ) : (
-            <div />
-          )}
+          {draggableTitleDiv} {pageNumber}
         </div>
-        <div className="outline-subnodes">
-          {node.children.map((node, index) => (
-            <OutlineNode
-              key={index}
-              node={node}
-              currentPath={currentPath}
-              level={level + 1}
-              pageRange={this.props.pageRange}
-            />
-          ))}
-        </div>
+        <div className="outline-subnodes">{subnodes}</div>
       </div>
     );
   }
@@ -123,7 +129,7 @@ export default class Sidebar extends Component {
     super(props);
     this.state = {
       outlineRoots: window.HighlightManager.docProxy.listSerializableOutlines(),
-      pageRange: (window._pdf?._pdfViewer?.currentPageNumber || 0) - 1,
+      pageRange: (window._pdf?.pdfViewer?.currentPageNumber || 0) - 1,
     };
     this.resize = this.resize.bind(this);
     this.handleOutlineChange = this.handleOutlineChange.bind(this);
@@ -131,11 +137,11 @@ export default class Sidebar extends Component {
       leading: true,
       trailing: true,
     });
-    window._pdf._eventBus.on("pagechanging", this.handleScroll);
+    window._pdf.pdfjsEventBus.on("pagechanging", this.handleScroll);
   }
 
   handleScroll() {
-    const visisblePages = window._pdf._pdfViewer._getVisiblePages();
+    const visisblePages = window._pdf.pdfViewer._getVisiblePages();
     const pageRange = [visisblePages.first.id, visisblePages.last.id];
     logger.log("handleScroll", pageRange);
     this.setState({ pageRange });

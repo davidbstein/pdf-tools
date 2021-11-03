@@ -5,6 +5,7 @@ import * as PDFJSViewer from "pdfjs-dist/web/pdf_viewer";
 import fs from "fs";
 import HighlightManager from "@/annotation/HighlightManager";
 import path from "path";
+import { setIsSaved } from "../actions";
 const logger = new Logger("PDFAnnotationEditor", { debug: true });
 
 export default class PDFAnnotationEditor {
@@ -13,7 +14,7 @@ export default class PDFAnnotationEditor {
     this.containerDOMElement = container;
     this.reactComponent = reactComponent;
     this.pdfjsEventBus = new PDFJSViewer.EventBus();
-    // see https://github.com/mozilla/pdf.js/blob/master/src/display/api.js for parameters
+    // see https://github.com/mozil la/pdf.js/blob/master/src/display/api.js for parameters
     this.pdfViewer = new PDFJSViewer.PDFViewer({
       container: container,
       eventBus: this.pdfjsEventBus,
@@ -37,29 +38,19 @@ export default class PDFAnnotationEditor {
     for (let _method in descriptors)
       if (typeof descriptors[_method].value === "function" && _method !== "constructor") {
         this[_method] = this[_method]?.bind(this);
-        console.log(_method);
+        logger.log(_method);
       }
 
     // debouncers
     const _debounceSettings = { leading: false, trailing: true };
-    this.autoSave = _.debounce(this.autoSave, 3000, _debounceSettings);
+    this.autoSave = _.debounce(this.autoSave, 3000, { leading: true, trailing: true });
     this.saveFileAndAnnotations = _.debounce(this.saveFileAndAnnotations, 100, _debounceSettings);
 
     // load
     this.pdfjsEventBus.on("annotationlayerrendered", () => {
-      logger.log("annot layer rendered");
+      logger.info("annot layer rendered");
     });
     this._initialize();
-  }
-
-  get _eventBus() {
-    logger.warn("TODO: KILL THIS REFERENCE");
-    return this.pdfjsEventBus;
-  }
-
-  get _pdfViewer() {
-    logger.warn("TODO: KILL THIS REFERENCE");
-    return this.pdfViewer;
   }
 
   async _initialize() {
@@ -94,9 +85,9 @@ export default class PDFAnnotationEditor {
     this.doc = doc;
     this.pdfViewer.setDocument(doc);
     const tempRAL = PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer;
-    PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer = function () {
-      logger.log("annotate");
-    };
+    // PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer = function () {
+    //   logger.log("annotate");
+    // };
     document.addEventListener("keypress", this._saveListener);
     window.addEventListener("backend-save", this.saveFileAndAnnotations);
     return this.highlightManager;
@@ -104,9 +95,34 @@ export default class PDFAnnotationEditor {
 
   async _initialize_listeners() {
     this.pdfjsEventBus.on("updateviewarea", (evt) => {
-      logger.log("update view area");
+      logger.info("update view area");
     });
 
+    this._startHighlightManagerControllers();
+    this._startUIEventListeners();
+    this._startUIEventNotifiers();
+  }
+
+  /**
+   * listens for notifications triggered by UI events, notified the pdf management stuff
+   */
+  _startUIEventListeners() {
+    window.addEventListener("app-set-zoom", () => {});
+    window.addEventListener("app-set-page", () => {});
+    window.addEventListener("app-change-outline", () => {});
+    window.addEventListener("app-change-annotation-mode", () => {});
+  }
+
+  /**
+   * listens to changes to the pdf, notifies the React part of the UI.
+   */
+  _startUIEventNotifiers() {
+    this.pdfjsEventBus.on("pagechanging", this.checkCurrentPage);
+    this.pdfjsEventBus.on("scalechanging", this.checkCurrentScale);
+    window.addEventListener("pdf-outline-changed", this.updateOutline);
+  }
+
+  _startHighlightManagerControllers() {
     window.addEventListener("highlight-manager-loaded", () => {
       logger.log("highligh manager loaded! adding listeners...");
       this.pdfjsEventBus.on("pagerendered", this.highlightManager.handlePageRendered);
@@ -116,6 +132,7 @@ export default class PDFAnnotationEditor {
       window.addEventListener("backend-redo", this.highlightManager.redo);
     });
   }
+
   async redrawPage(pageIdx) {
     const page = await this.pdfViewer.getPageView(pageIdx);
     page.reset();
@@ -138,7 +155,7 @@ export default class PDFAnnotationEditor {
       .catch((error) => logger.log(`no pagenum for ${JSON.stringify(destination)}`));
   }
 
-  async _save(location, message = "saving") {
+  async _save(location, message = "saving", callback = () => {}) {
     const saveLoc = `${location}`;
     logger.log(`[SteinPdfViewer] (start) ${message} - ${saveLoc}`);
     emitEvent("app-save-start", { message });
@@ -148,15 +165,19 @@ export default class PDFAnnotationEditor {
     fs.writeFileSync(saveLoc, f);
     emitEvent("app-save-end", { message });
     logger.log(`[SteinPdfViewer] (done) ${message} - ${saveLoc}`);
+    callback();
   }
 
   async autoSave() {
     const saveLoc = `${this._tempFileLocation}`;
+    setIsSaved(false);
     this._save(saveLoc, "auto-save");
   }
 
   async saveFileAndAnnotations() {
     const saveLoc = `${this._fileLocation}`;
-    this._save(saveLoc, "save");
+    this._save(saveLoc, "save", () => {
+      setIsSaved(true);
+    });
   }
 }

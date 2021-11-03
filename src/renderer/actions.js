@@ -28,3 +28,7 @@ export function handleFileSelect(target) {
   console.log("opening", target);
   send("openFile", { target });
 }
+
+export function setIsSaved(isSaved) {
+  send("setIsSaved", { isSaved });
+}

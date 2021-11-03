@@ -8,6 +8,7 @@ import {
   getCurrentPath,
   setCurrentPath,
   sendMessageToActiveWindow,
+  setWindowSaveFlag,
 } from "./windowManagement";
 import { getConfig } from "../common/defaults";
 import os from "os";
@@ -89,10 +90,10 @@ ipcMain.on("navigateTo", (event, { target, _id }) => {
   event.returnValue = curPath;
 });
 
-ipcMain.on("setSaveState", (event, { saveState, _id }) => {
-  _log(`IPC -- setSaveState: ${_id} ===> ${saveState}`);
-  setWindowSaveFlag(_id, saveState);
-  event.returnValue = saveState;
+ipcMain.on("setIsSaved", (event, { isSaved, _id }) => {
+  _log(`IPC -- setIsSaved: ${_id} ===> ${isSaved}`);
+  setWindowSaveFlag(_id, isSaved);
+  event.returnValue = isSaved;
 });
 
 ipcMain.on("openFile", (event, { target, _id }) => {

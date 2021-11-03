@@ -143,6 +143,11 @@ export default class DocProxy {
 
   _rootToOutline(node, parent) {
     const children = [];
+
+    if (node["/Title"]?.tag) node["/Title"] = PDFObjToDict(this.lookup(node["/Title"].ref));
+    if (node["/A"]?.tag)
+      logger.warn("this outline object is a link: ", PDFObjToDict(this.lookup(node["/A"].ref)));
+
     if (node["/First"]) {
       let current = this.lookupDict(node["/First"]);
       while (true) {
@@ -165,7 +170,7 @@ export default class DocProxy {
     for (let [entry, _] of this.doc.context.indirectObjects.entries())
       maxObjectNumber = Math.max(maxObjectNumber, entry.objectNumber);
     this.doc.context.largestObjectNumber = maxObjectNumber;
-    console.log(`reset max object number to: ${maxObjectNumber}`);
+    logger.info(`reset max object number to: ${maxObjectNumber}`);
   }
 
   deleteOutline(outlineRoot, shouldUpdateMaxObjectNumber = false) {
@@ -181,7 +186,7 @@ export default class DocProxy {
       typeof page === "number" ? page : page[0],
       typeof page === "number" ? { type: "XYZ", args: [null, null, null] } : page[1],
     ];
-    console.log("GEN DEST", pageIdx, destDict);
+    logger.info("GEN DEST", pageIdx, destDict);
     let pageRef = this.pages[pageIdx].ref;
     let dest = PDFArray.withContext(context);
     dest.push(pageRef);
@@ -203,7 +208,7 @@ export default class DocProxy {
    * ]
    */
   createOutline(outline) {
-    console.log(`largestObjectNumber = ${this.doc.context.largestObjectNumber}`);
+    logger.info(`largestObjectNumber = ${this.doc.context.largestObjectNumber}`);
     const pageRefs = this.listPageRefs();
     const root = {
       children: outline,
@@ -244,11 +249,11 @@ export default class DocProxy {
         break;
       }
     }
-    console.log("ROOT NODE", root);
+    logger.info("ROOT NODE", root);
     // initialize Map that will become the PDFDict
     console.groupCollapsed(" ~created outline!~ ");
     for (let { info, ...rest } of all_items) {
-      console.log(">>", info);
+      logger.info(">>", info);
       const { count, title, ref, dest } = info;
       const { first, last, next, prev, parent, _root } = rest;
       const map = new Map();
@@ -264,9 +269,9 @@ export default class DocProxy {
       const dict = PDFDict.fromMapWithContext(map, this.doc.context);
       this.doc.context.assign(ref, dict);
       if (_root) this.doc.catalog.set(PDFName.of("Outlines"), ref);
-      console.log(dict.toString()); //, _.fromPairs(Array.from(map.entries(), (e) => e)));
+      logger.info(dict.toString()); //, _.fromPairs(Array.from(map.entries(), (e) => e)));
     }
-    console.log(this.doc.catalog.toString());
+    logger.info(this.doc.catalog.toString());
     console.groupEnd();
   }
 
@@ -314,15 +319,15 @@ export default class DocProxy {
       pageIdx,
     };
     const context = this.doc.context;
-    console.log(params, pageLeaf.ref, pageRef);
+    logger.info(params, pageLeaf.ref, pageRef);
     return {
       removeFn: () => {
-        console.log("remove highlight");
+        logger.info("remove highlight");
         pageLeaf.removeAnnot(params.ref);
         params.ref = null;
       },
       addFn: () => {
-        console.log("add highlight");
+        logger.info("add highlight");
         const highlightRef = context.register(highlightDict);
         params.ref = highlightRef;
         pageLeaf.addAnnot(highlightRef);
@@ -334,7 +339,7 @@ export default class DocProxy {
 
   addAnnotation(highlightDict) {
     const annotationFunctions = this.createAnnotationFunctions(highlightDict);
-    console.log(annotationFunctions);
+    logger.info(annotationFunctions);
     return {
       undoFn: annotationFunctions.removeFn,
       redoFn: annotationFunctions.addFn,
