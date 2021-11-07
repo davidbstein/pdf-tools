@@ -2,42 +2,14 @@ import React, { Component } from "react";
 import { ResizeGrip } from "@/components/ResizablePanel";
 import { stubArray } from "lodash";
 
-function outlineToBreadcrumb(outline, pageIdx) {
-  const breadcrumb = [];
-  let current = outline;
-  breadcrumb.push(current?.title);
-  while (current?.children.length > 0) {
-    current = current.children
-      .filter((child) => child.pageIdx <= pageIdx)
-      .sort((a, b) => b.pageIdx - a.pageIdx)[0];
-    breadcrumb.push(current.title);
-  }
-  return breadcrumb.map((title, idx) => (typeof title === "string" ? title : idx));
-}
-
 class CurrentPath extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      currentPath: [],
-    };
-    this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, {
-      leading: false,
-      trailing: true,
-    });
-    window._pdf.pdfjsEventBus.on("pagechanging", this.handleScroll);
-  }
-  handleScroll() {
-    const outlineRoot = window.HighlightManager.docProxy.listSerializableOutlines();
-    const pageIdx = window._pdf.pdfViewer.currentPageNumber - 1;
-    this.setState({
-      currentPath: outlineToBreadcrumb(outlineRoot?.[0], pageIdx),
-    });
   }
   render() {
     return (
       <div className="toolbar-item current-path">
-        {this.state.currentPath.map((title, idx) => (
+        {this.props.path.map((title, idx) => (
           <span className="breadcrumb-item" key={idx}>
             <span className="breadcrumb-title">{title}</span>
             <span className="breadcrumb-separator">/</span>
@@ -52,18 +24,11 @@ class PageNumberControls extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      pageNumber: props.pageNumber,
       pageCount: window._pdf.pdfViewer.pagesCount,
     };
-    window._pdf.pdfjsEventBus.on("pagechanging", this.handlePageChange.bind(this));
     this.up = this.up.bind(this);
     this.down = this.down.bind(this);
     this.changePageNumber = this.changePageNumber.bind(this);
-  }
-  handlePageChange({ pageLabel, pageNumber, previous }) {
-    this.setState({
-      pageNumber,
-    });
   }
   changePageNumber(e) {
     const pageNumber = parseInt(e.target.value);
@@ -72,7 +37,8 @@ class PageNumberControls extends Component {
   up() {}
   down() {}
   render() {
-    const { pageNumber, pageCount } = this.state;
+    const { pageCount } = this.state;
+    const { pageNumber } = this.props;
     return (
       <div className="toolbar-item page-number-view">
         <div className="button-panel">
@@ -177,14 +143,14 @@ export default class Toolbar extends Component {
     return (
       <div id="Toolbar">
         <div id="toolbar-left">
-          <CurrentPath />
+          <CurrentPath path={this.props.path} />
         </div>
         <div id="toolbar-mid">
           <ZoomControls />
           <HighlightLevelToggle />
         </div>
         <div id="toolbar-right">
-          <PageNumberControls />
+          <PageNumberControls pageNumber={this.props.pageNumber} />
         </div>
 
         <ResizeGrip resize={this.resize} />

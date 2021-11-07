@@ -5,7 +5,7 @@
  * type: Highlight | Underline | Squiggly | Strikeout | Link | FreeText | Popup | Line
  */
 
-import { colorToRGB, colorToHex } from "./AnnotationHelpers";
+import { colorToRGB, colorToHex } from "./annotationHelpers/colorTools";
 import { getConfig } from "@/../common/defaults";
 export const ToolTypes = {
   HIGHLIGHT: "Highlight",

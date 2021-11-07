@@ -54,7 +54,7 @@ import {
 } from "pdf-lib";
 import { node } from "prop-types";
 import { Logger } from "../helpers";
-import { colorToHex } from "./AnnotationHelpers";
+import { colorToHex } from "./annotationHelpers/colorTools";
 
 const logger = new Logger("DocProxy");
 
@@ -89,7 +89,8 @@ function PDFObjToDict(pdfObj) {
 
 export default class DocProxy {
   static async createDocProxy(data) {
-    const doc = await PDFDocument.load(data);
+    const loadTask = PDFDocument.load(data);
+    const doc = await loadTask;
     return new DocProxy(doc);
   }
 
@@ -284,6 +285,10 @@ export default class DocProxy {
 
   async getDocAsBytes(options) {
     return await this.doc.save({ useObjectStreams: false });
+  }
+
+  streamDocAsBytes(options) {
+    return this.doc.save({ useObjectStreams: true });
   }
 
   /**

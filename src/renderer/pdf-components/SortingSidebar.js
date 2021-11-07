@@ -102,7 +102,7 @@ export default class SortingSidebar extends Component {
     this.resize = this.resize.bind(this);
     this.handleOutlineChange = this.handleOutlineChange.bind(this);
     this.handleScroll = _.debounce(this.handleScroll.bind(this), 100, { trailing: true });
-    window._pdf._eventBus.on("pagechanging", this.handleScroll);
+    window.addEventListener("pdf-page-changed", this.handleScroll);
   }
 
   addNode(node) {

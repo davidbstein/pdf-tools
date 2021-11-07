@@ -1,6 +1,6 @@
 import Viewer from "@/pdf-components/Viewer";
 import Toolbar from "@/pdf-components/Toolbar";
-import Sidebar from "@/pdf-components/Sidebar";
+import Sidebar from "@/pdf-components/sidebar/Sidebar";
 import Statusbar from "@/pdf-components/Statusbar";
 import Annotationbar from "@/pdf-components/Annotationbar";
 import PDFAnnotationEditor from "@/annotation/PDFAnnotationEditor";
@@ -9,6 +9,20 @@ import React, { Component } from "react";
 import "pdfjs-dist/web/pdf_viewer.css";
 import "@/css/pdf.scss";
 import { getCurrentPath } from "../actions";
+import { Logger } from "../helpers";
+
+class LoadingScreen extends Component {
+  render() {
+    return (
+      <div className="loading-screen">
+        <div className="loading-screen-content">
+          <div className="loading-screen-spinner" />
+          <div className="loading-screen-text">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+}
 
 export default class PdfViewer extends Component {
   constructor(props) {
@@ -20,6 +34,9 @@ export default class PdfViewer extends Component {
       statusbar_height: 22,
       annotationbar_width: 150,
       pdf_ready: false,
+      pageNumber: 1,
+      page_idx: 0,
+      outlinePath: [],
     };
     this.displayScaleChanged = this.displayScaleChanged.bind(this);
     this.resizeSidebar = this.resizeSidebar.bind(this);
@@ -55,8 +72,12 @@ export default class PdfViewer extends Component {
       }
     });
   }
+  setCurrentPage({ firstPageIdx, lastPageIdx, pageNumber, outlinePath }) {
+    this.setState({ firstPageIdx, lastPageIdx, pageNumber, outlinePath });
+  }
   render() {
-    const { current_page_idx, current_page_num, outline, current_zoom } = this.state;
+    const { firstPageIdx, lastPageIdx, pageNumber, outlinePath, outline, current_zoom } =
+      this.state;
     return (
       <div className="PdfViewer">
         <style>
@@ -71,13 +92,18 @@ export default class PdfViewer extends Component {
         </style>
         {this.state.pdf_ready ? (
           <div>
-            <Toolbar resize={this.resizeToolbar} />
-            <Sidebar resize={this.resizeSidebar} />
+            <Toolbar resize={this.resizeToolbar} pageNumber={pageNumber} path={outlinePath} />
+            <Sidebar
+              resize={this.resizeSidebar}
+              firstPageIdx={firstPageIdx}
+              lastPageIdx={lastPageIdx}
+              outlinePath={outlinePath}
+            />
             <Statusbar resize={this.resizeStatusbar} />
             <Annotationbar resize={this.resizeAnnotationbar} />
           </div>
         ) : (
-          []
+          <LoadingScreen />
         )}
         <Viewer
           url={this.props.url}

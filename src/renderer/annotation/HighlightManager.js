@@ -1,11 +1,10 @@
 import _ from "lodash";
 import {
   currentSelection,
-  colorToHex,
-  colorToRGB,
   annotationToDivs,
   getSelectionPageNumber,
-} from "@/annotation/AnnotationHelpers";
+} from "./annotationHelpers/annotationHelpers";
+import { colorToHex, colorToRGB } from "./annotationHelpers/colorTools";
 import { ToolList, ToolTypes } from "@/annotation/AnnotationTypes";
 import { DOMSVGFactory } from "pdfjs-dist/legacy/build/pdf.js";
 import DocProxy from "@/annotation/DocProxy";
@@ -51,7 +50,8 @@ export default class HighlightManager {
 
   async _initializeDocument(data) {
     const container = this.annotationEditor._container;
-    this.docProxy = await DocProxy.createDocProxy(data);
+    const docLoadTask = DocProxy.createDocProxy(data);
+    this.docProxy = await docLoadTask;
     emitEvent("highlight-manager-loaded");
   }
 
@@ -216,6 +216,10 @@ export default class HighlightManager {
 
   async getPDFBytes(options) {
     return await this.docProxy.getDocAsBytes();
+  }
+
+  streamPDFBytes(options) {
+    return this.docProxy.streamDocAsBytes();
   }
 
   async getPDFBytesNoAnnots(options) {

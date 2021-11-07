@@ -1,3 +1,7 @@
+/**
+ * this is the primary controller for the application. It is responsible for making state changes to the pdfViewer and the HighlightManager.
+ */
+
 import _ from "lodash";
 import { getDocument } from "pdfjs-dist/webpack";
 import { Logger, emitEvent } from "@/helpers";
@@ -6,7 +10,22 @@ import fs from "fs";
 import HighlightManager from "@/annotation/HighlightManager";
 import path from "path";
 import { setIsSaved } from "../actions";
+import { outlineToBreadcrumb } from "@/annotation/annotationHelpers/outlineManagement";
 const logger = new Logger("PDFAnnotationEditor", { debug: true });
+
+function bufferFile(path) {
+  const stats = fs.statSync(path);
+  const fd = fs.openSync(path, "r");
+  const buffer = new Buffer.alloc(stats.size);
+  fs.read(fd, { buffer }, (error, bytesRead, buffer) => {
+    logger.log(`load progress: ${bytesRead} ${stats.size}`);
+  });
+  buffer.onProgress = (progress) => {
+    logger.log(`parse progress: ${progress}`);
+  };
+  logger.log("buffer loaded...");
+  return buffer;
+}
 
 export default class PDFAnnotationEditor {
   constructor(fileLocation, container, reactComponent) {
@@ -16,7 +35,7 @@ export default class PDFAnnotationEditor {
     this.pdfjsEventBus = new PDFJSViewer.EventBus();
     // see https://github.com/mozil la/pdf.js/blob/master/src/display/api.js for parameters
     this.pdfViewer = new PDFJSViewer.PDFViewer({
-      container: container,
+      container,
       eventBus: this.pdfjsEventBus,
       renderer: "svg" || "canvas",
       annotationMode: 0,
@@ -24,16 +43,14 @@ export default class PDFAnnotationEditor {
     this.pdfViewer._buffer.resize(500);
     const fpath = path.parse(fileLocation);
     this._fileLocation = fileLocation;
-    this._tempFileLocation = path.format({
-      ...fpath,
-      base: `.~${fpath.name}(${/*new Date().toISOString()*/ "-"}).${fpath.ext}`,
-    });
+    const tempFileName = `.~${fpath.name}(${/*new Date().toISOString()*/ "-"}).${fpath.ext}`;
+    this._tempFileLocation = path.format({ ...fpath, base: tempFileName });
 
     // global refs
     window._pdf = this;
     window.PDFAnnotationEditor = this;
 
-    // bind
+    // bind all methods to current scope.
     const descriptors = Object.getOwnPropertyDescriptors(this.__proto__);
     for (let _method in descriptors)
       if (typeof descriptors[_method].value === "function" && _method !== "constructor") {
@@ -46,20 +63,27 @@ export default class PDFAnnotationEditor {
     this.autoSave = _.debounce(this.autoSave, 3000, { leading: true, trailing: true });
     this.saveFileAndAnnotations = _.debounce(this.saveFileAndAnnotations, 100, _debounceSettings);
 
-    // load
     this.pdfjsEventBus.on("annotationlayerrendered", () => {
       logger.info("annot layer rendered");
     });
     this._initialize();
   }
 
+  /**
+   * handles order of operations for loading the PDF and starting the annotation manager
+   */
   async _initialize() {
     logger.log("initializing...");
     await this._initialize_listeners();
-    const documentFilebuffer = await this._initialize_document();
-    await this._initialize_annotation_manager(documentFilebuffer);
+    const readTarget = await this._initialize_document();
+    //const filebuffer = fs.readFileSync(readTarget).buffer;
+    //await this._initialize_annotation_manager(filebuffer);
+    await this._initialize_annotation_manager(readTarget);
   }
 
+  /**
+   * loads the pdf file into a filebuffer
+   */
   async _initialize_document() {
     const fileLastModified = fs.statSync(this._fileLocation).mtime;
     const backupExists = fs.existsSync(this._tempFileLocation);
@@ -70,18 +94,29 @@ export default class PDFAnnotationEditor {
         restore = confirm(`Backup exists for ${path.parse(this._fileLocation).base}. Recover?`);
     }
     const readTarget = restore ? this._tempFileLocation : this._fileLocation;
-    const filebuffer = fs.readFileSync(readTarget).buffer;
-    return filebuffer;
+    return readTarget;
   }
 
-  async _initialize_annotation_manager(filebuffer) {
+  /**
+   * loads the pdf UI from a filebuffer
+   */
+  async _initialize_annotation_manager(readTarget) {
+    logger.log("document initialized");
     this.highlightManager = new HighlightManager(this);
-    await this.highlightManager._initializeDocument(filebuffer);
+    const buffer1 = bufferFile(readTarget);
+    logger.log("reading pdf...");
+    const annotationLoadingTask = await this.highlightManager._initializeDocument(buffer1);
     // see https://github.com/mozilla/pdf.js/blob/master/src/display/api.js for parameters
-    const doc = await getDocument({
+    logger.log("starting render task");
+    const loadingTask = getDocument({
       data: await this.highlightManager.getPDFBytes(),
+      //data: this.highlightManager.streamPDFBytes(),
       verbosity: 0,
-    }).promise;
+    });
+    loadingTask.onProgress = (progressData) => {
+      logger.info(`loading progress: ${progressData.loaded}/${progressData.total}`);
+    };
+    const doc = await loadingTask.promise;
     this.doc = doc;
     this.pdfViewer.setDocument(doc);
     const tempRAL = PDFJSViewer.PDFPageView.prototype._renderAnnotationLayer;
@@ -117,11 +152,14 @@ export default class PDFAnnotationEditor {
    * listens to changes to the pdf, notifies the React part of the UI.
    */
   _startUIEventNotifiers() {
-    this.pdfjsEventBus.on("pagechanging", this.checkCurrentPage);
+    this.pdfjsEventBus.on("pagechanging", this.updateCurrentPageUI);
     this.pdfjsEventBus.on("scalechanging", this.checkCurrentScale);
     window.addEventListener("pdf-outline-changed", this.updateOutline);
   }
 
+  /**
+   * listens for notifications sent by the pdf backend and notifies the highlight manager
+   */
   _startHighlightManagerControllers() {
     window.addEventListener("highlight-manager-loaded", () => {
       logger.log("highligh manager loaded! adding listeners...");
@@ -140,10 +178,6 @@ export default class PDFAnnotationEditor {
     return page;
   }
 
-  getOutline(callback) {
-    this.doc.getOutline().then(callback);
-  }
-
   goToDestinationPage(pageIdx) {
     this.pdfViewer.currentPageNumber = pageIdx + 1;
   }
@@ -153,6 +187,21 @@ export default class PDFAnnotationEditor {
       .getPageIndex(destination)
       .then((pageIndex) => callback(pageIndex + 1))
       .catch((error) => logger.log(`no pagenum for ${JSON.stringify(destination)}`));
+  }
+
+  updateCurrentPageUI(event) {
+    const { first, last } = this.pdfViewer._getVisiblePages();
+    const outline = this.highlightManager.docProxy.listOutlines()[0];
+    const path = outlineToBreadcrumb(outline, first.id);
+    this.reactComponent.setCurrentPage({
+      pageNumber: event.pageNumber,
+      pageLabel: event.pageLabel,
+      firstPageIdx: first.id,
+      lastPageIdx: last.id,
+      // previous: event.previous,
+      outlinePath: path,
+    });
+    logger.log(`update page to $${event.pageNumber}. New outline: ${path.join(">")}`);
   }
 
   async _save(location, message = "saving", callback = () => {}) {

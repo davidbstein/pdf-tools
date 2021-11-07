@@ -1,5 +1,5 @@
 #Sidebar {
-  --outline-indent: 10px;
+  --outline-indent: 6px;
   position: fixed;
   top: var(--toolbar-height);
   left: 0;
@@ -9,6 +9,11 @@
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 1;
+  direction: rtl;
+  & > div {
+    direction: ltr;
+  }
+
   .resize-grip {
     width: var(--resize-grip-width);
     top: 0;
@@ -18,13 +23,70 @@
   }
 
   .outline-node {
+    position: relative;
     font-family: sans-serif;
     font-size: small;
     white-space: nowrap;
     text-overflow: ellipsis;
-    position: relative;
-    .later-than-visible-start.earlier-than-visible-end {
+    line-height: 1em;
+    border-left: 1px solid #ccc;
+    margin-left: var(--outline-indent);
+    margin-top: 0px;
+    .on-screen {
       background: #ccc;
+    }
+    &.outline-node-level-0 {
+      margin-left: 0;
+      padding-top: 8px;
+      border-left: none;
+      & > .outline-node-title {
+        display: none;
+      }
+      & > .outline-node-title-indent {
+        display: none;
+      }
+    }
+    &.outline-node-level-1 {
+      margin-left: 0;
+      margin-top: 8px;
+      padding-top: 0px;
+      border-left: none;
+      & > .outline-node-title {
+        font-weight: bold;
+      }
+      & > .outline-node-title-indent {
+        display: none;
+      }
+    }
+    &.outline-node-level-2 {
+      margin-left: 0;
+      padding-top: 2px;
+      border-left: none;
+      & > .outline-node-title-indent {
+        display: none;
+      }
+    }
+    &.outline-node-level-3 {
+      margin-left: 0;
+      padding-top: 1px;
+      & > .outline-node-title-indent {
+        width: calc(var(--outline-indent) * 1.5);
+      }
+    }
+    &.outline-node-level-4 {
+      padding-top: 0px;
+    }
+    &.outline-node-level-5 {
+      padding-top: 0px;
+    }
+    &.outline-node-level-6 {
+      padding-top: 0px;
+    }
+    &.outline-node-level-7 {
+      padding-top: 0px;
+    }
+    &.outline-node-level-8 {
+      padding-top: 0px;
     }
   }
 
@@ -69,9 +131,6 @@
         opacity: 0.9;
       }
     }
-  }
-  .outline-node-title.current-path {
-    font-weight: bold;
   }
 
   .outline-node .outline-subnodes {
