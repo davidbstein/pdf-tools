@@ -15,8 +15,12 @@ export function ResizeGrip(props) {
     });
   };
 
+  const click = (e) => {
+    if (props.hide) props.hide();
+  }
+
   return (
-    <div className="resize-grip" onMouseDown={onMouseDown}>
+    <div className="resize-grip" onMouseDown={onMouseDown} onClick={click}>
       {props.children}
     </div>
   );

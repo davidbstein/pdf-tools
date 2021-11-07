@@ -10,6 +10,7 @@
   top: 0;
   width: 100%;
   z-index: 1;
+  overflow: hidden;
 
   display: grid;
   grid-template-columns: 3fr 1fr 1fr;
