@@ -51,12 +51,15 @@ import {
   PDFNull,
   PDFNumber,
   PDFRef,
+  PDFHexString,
 } from "pdf-lib";
 import { node } from "prop-types";
 import { Logger } from "../helpers";
 import { colorToHex } from "./annotationHelpers/colorTools";
 
 const logger = new Logger("DocProxy");
+
+const _STEIN_PDF_INFO_KEY = PDFName.of("steinpdfviewinfo");
 
 function PDFObjToDict(pdfObj) {
   let obj = {
@@ -381,5 +384,16 @@ export default class DocProxy {
     return this.listIndirectObjects()
       .filter((a) => highlightTypes.indexOf(a?.["/Subtype"]) >= 0)
       .map((obj) => obj);
+  }
+
+  setViewInfo(key, value) {
+    const info = this.getCustomViewInfo();
+    info[key] = value;
+    this.doc.getInfoDict().set(_STEIN_PDF_INFO_KEY, new PDFHexString(JSON.stringify(info)));
+  }
+
+  getCustomViewInfo() {
+    const raw = this.doc.getInfoDict().get(_STEIN_PDF_INFO_KEY)?.value || "{}";
+    return JSON.parse(raw);
   }
 }
