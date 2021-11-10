@@ -8,7 +8,10 @@
 				"$eslint-stylish"
 			],
 			"label": "npm: dev",
-			"detail": "electron-webpack dev"
+			"detail": "electron-webpack dev",
+			"runOptions": {
+				"runOn": "folderOpen"
+			}
 		}
 	]
 }
