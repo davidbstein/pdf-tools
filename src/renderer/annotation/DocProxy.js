@@ -386,7 +386,7 @@ export default class DocProxy {
       .map((obj) => obj);
   }
 
-  setViewInfo(key, value) {
+  setCustomViewInfo(key, value) {
     const info = this.getCustomViewInfo();
     info[key] = value;
     this.doc.getInfoDict().set(_STEIN_PDF_INFO_KEY, new PDFHexString(JSON.stringify(info)));

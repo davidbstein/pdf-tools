@@ -1,6 +1,9 @@
 import React, { Component } from "react";
 import { ResizeGrip } from "@/components/ResizablePanel";
 import { stubArray } from "lodash";
+import { emitEvent, Logger } from "@/helpers";
+
+const logger = new Logger("Toolbar");
 
 class CurrentPath extends Component {
   constructor(props) {
@@ -38,7 +41,7 @@ class PageNumberControls extends Component {
   down() {}
   render() {
     const { pageCount } = this.state;
-    const { pageNumber } = this.props;
+    const { firstPageIdx, lastPageIdx } = this.props;
     return (
       <div className="toolbar-item page-number-view">
         <div className="button-panel">
@@ -50,9 +53,16 @@ class PageNumberControls extends Component {
           </button>
         </div>
         <div className="page-number">
-          <input type="number" value={pageNumber} onChange={this.changePageNumber} />
-          <span>/</span>
-          <span className="page-count"> {pageCount}</span>
+          <span>
+            (
+            <input
+              style={{ width: `${Math.max(1, Math.ceil(Math.log10(firstPageIdx)) / 2)}em` }}
+              type="number"
+              value={firstPageIdx}
+              onChange={this.changePageNumber}
+            />
+            -{lastPageIdx})/{pageCount}
+          </span>
         </div>
       </div>
     );
@@ -62,25 +72,17 @@ class PageNumberControls extends Component {
 class ZoomControls extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      zoom: 1,
-    };
-    window._pdf.pdfjsEventBus.on("scalechanging", this.handleZoomChange.bind(this));
     this.zoomIn = this.zoomIn.bind(this);
     this.zoomOut = this.zoomOut.bind(this);
   }
-  handleZoomChange({ source, scale, presentValue }) {
-    console.log(scale);
-    this.setState({ zoom: scale });
-  }
   zoomIn() {
-    window._pdf.pdfViewer._setScale(this.state.zoom + 0.1);
+    emitEvent("app-set-zoom", this.props.scale + 0.1);
   }
   zoomOut() {
-    window._pdf.pdfViewer._setScale(this.state.zoom - 0.1);
+    emitEvent("app-set-zoom", this.props.scale - 0.1);
   }
   render() {
-    const { zoom } = this.state;
+    const { scale } = this.props;
     return (
       <div className="toolbar-item">
         <button onClick={this.zoomOut} className="zoom-out">
@@ -89,7 +91,7 @@ class ZoomControls extends Component {
         <button onClick={this.zoomIn} className="zoom-in">
           +
         </button>
-        <div className="zoom-level">{Math.floor(100 * zoom)}%</div>
+        <div className="zoom-level">{Math.floor(100 * scale)}%</div>
       </div>
     );
   }
@@ -98,14 +100,12 @@ class ZoomControls extends Component {
 class HighlightLevelToggle extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      level: 1,
-    };
     this.toggleLevel = this.toggleLevel.bind(this);
   }
   toggleLevel() {
-    this.setState({
-      level: this.state.level === 1 ? 3 : 1,
+    logger.log(this.props);
+    emitEvent("app-set-highlight-render-layer", {
+      highlightRenderLayer: this.props.highlightRenderLayer === 1 ? 3 : 1,
     });
   }
   render() {
@@ -119,12 +119,12 @@ class HighlightLevelToggle extends Component {
             width: fit-content;
           }
           #Viewer .highlight-layer {
-            z-index: ${this.state.level};
+            z-index: ${this.props.highlightRenderLayer};
           }
         `}
         </style>
         <button onClick={this.toggleLevel} className="highlight-level-toggle">
-          {this.state.level === 1 ? "overlight" : "backlight"}
+          {this.props.highlightRenderLayer === 1 ? "overlight" : "backlight"}
         </button>
       </div>
     );
@@ -146,11 +146,14 @@ export default class Toolbar extends Component {
           <CurrentPath path={this.props.path} />
         </div>
         <div id="toolbar-mid">
-          <ZoomControls />
-          <HighlightLevelToggle />
+          <ZoomControls scale={this.props.scale} />
+          <HighlightLevelToggle highlightRenderLayer={this.props.highlightRenderLayer} />
         </div>
         <div id="toolbar-right">
-          <PageNumberControls pageNumber={this.props.pageNumber} />
+          <PageNumberControls
+            firstPageIdx={this.props.firstPageIdx}
+            lastPageIdx={this.props.lastPageIdx}
+          />
         </div>
 
         <ResizeGrip resize={this.resize} />

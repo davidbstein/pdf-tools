@@ -75,21 +75,22 @@
           background: #666;
           color: black;
           height: 1.5em;
-          width: 4em;
           text-align: right;
         }
       }
     }
     button {
-      --button-size: 1.3em;
+      --button-size: calc(var(--toolbar-height) - 6px);
       border: 1px solid grey;
       background: #666;
       color: white;
-      height: var(--button-size);
-      width: var(--button-size);
+      height: calc(var(--button-size) * 0.8);
+      min-width: calc(var(--button-size) * 0.8);
       font-weight: bolder;
-      font-size: var(--button-size);
-      margin: 2px;
+      font-size: calc(var(--button-size) * 0.5);
+      line-height: calc(var(--button-size) * 0.8);
+      margin: calc(var(--button-size) * 0.1);
+      padding: 0 calc(var(--button-size) * 0.1);
     }
   }
   .resize-grip {
@@ -99,4 +100,14 @@
     left: 0;
     cursor: ns-resize;
   }
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }
