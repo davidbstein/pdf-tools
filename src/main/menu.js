@@ -8,6 +8,7 @@ export default function generateMenu(app, callbacks, genericCallback) {
       } ==`
     );
     const callback = callbacks[command] ? callbacks[command] : genericCallback;
+    console.log({ application: args[0], menu: args[1], event: args[2], command });
     callback({ application: args[0], menu: args[1], event: args[2], command });
   }
   const TEMPLATE = [

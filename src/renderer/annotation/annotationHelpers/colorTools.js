@@ -27,7 +27,11 @@ export function colorToRGB(colorObject) {
     if (_.max(_.values(colorObject)) > 1) {
       return { ...colorObject };
     } else {
-      return { r: colorObject[0] * 255, g: colorObject[1] * 255, b: colorObject[2] * 255 };
+      return {
+        r: (colorObject[0] == undefined ? colorObject.r : colorObject[0]) * 255,
+        g: (colorObject[1] == undefined ? colorObject.g : colorObject[1]) * 255,
+        b: (colorObject[2] == undefined ? colorObject.b : colorObject[2]) * 255,
+      };
     }
   }
   console.error(

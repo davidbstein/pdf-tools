@@ -62,13 +62,24 @@
       "type": "HIGHLIGHT"
     },
     {
-      "name": "Section ",
+      "name": "Grey Out",
+      "color": "#c6c6c6",
+      "opacity": 0.5,
+      "type": "HIGHLIGHT"
+    },
+    {
+      "name": "Section Name",
       "color": "#000000",
       "type": "UNDERLINE"
     },
     {
       "name": "Case Name",
       "color": "#669c34",
+      "type": "UNDERLINE"
+    },
+    {
+      "name": "Key Point",
+      "color": "#ff8d00",
       "type": "UNDERLINE"
     },
     {

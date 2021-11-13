@@ -98,6 +98,7 @@ ipcMain.on("setIsSaved", (event, { isSaved, _id }) => {
 
 ipcMain.on("openFile", (event, { target, _id }) => {
   createPDFWindow({ filePath: target });
+  app.addRecentDocument(target);
   _log(`IPC -- openFile: ${_id}  -- ${target} ===> ${3}`);
 });
 
@@ -108,11 +109,12 @@ function initializeMenu() {
       {
         Open: ({ application, menu, event }) => {
           console.log("OPEN FILE CLICKED", { application, menu, event });
-          const fileName = dialog.showOpenDialogSync(window, {
+          const [fileName] = dialog.showOpenDialogSync({
             properties: ["openFile"],
           });
           console.log(fileName);
-          sendMessageToActiveWindow("menu-clicked", { command: "open" });
+          createPDFWindow({ filePath: fileName });
+          app.addRecentDocument(fileName);
         },
         Save: ({ application, menu, event }) => {
           console.log("SAVE FILE CLICKED", { application, menu, event });

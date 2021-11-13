@@ -8,7 +8,7 @@
     "pdfassembler": "*",
     "pdf-annotate": "*"
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/plugin-transform-runtime": "^7.15.0",
     "@babel/preset-env": "^7.15.6",
     "@babel/preset-react": "^7.14.5",
@@ -85,6 +85,5 @@
     ],
     "copyright": "Copyright David Stein 2021",
     "productName": "Stein's PDF Notetaking Tools"
-  },
-  "dependencies": {}
+  }
 }
