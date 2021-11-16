@@ -27,11 +27,12 @@ export function colorToRGB(colorObject) {
     if (_.max(_.values(colorObject)) > 1) {
       return { ...colorObject };
     } else {
-      return {
+      const toRet = {
         r: (colorObject[0] == undefined ? colorObject.r : colorObject[0]) * 255,
         g: (colorObject[1] == undefined ? colorObject.g : colorObject[1]) * 255,
         b: (colorObject[2] == undefined ? colorObject.b : colorObject[2]) * 255,
       };
+      return toRet;
     }
   }
   console.error(
@@ -44,7 +45,8 @@ export function colorToRGB(colorObject) {
 
 export function colorToHex(color, opacity) {
   const rgb = colorToRGB(color);
-  const hexColor = "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1);
+  const hexColor =
+    "#" + ((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1).substring(0, 6);
   if (opacity) {
     let opacityHex = Math.round(256 + 255 * opacity)
       .toString(16)

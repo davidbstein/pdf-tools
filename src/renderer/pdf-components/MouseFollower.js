@@ -6,6 +6,7 @@
 import React, { Component } from "react";
 import { ToolList } from "../annotation/AnnotationTypes";
 import { emitEvent, Logger } from "../helpers";
+import _ from "lodash";
 
 const logger = new Logger("MouseFollower");
 
@@ -63,6 +64,10 @@ export default class MouseFollower extends Component {
     this.handleMouseLeave = this.handleMouseLeave.bind(this);
     this.handleSelectionChange = this.handleSelectionChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.updateFocus = _.throttle(this.updateFocus.bind(this), 500, {
+      leading: true,
+      trailing: true,
+    });
     this.setTool = this.setTool.bind(this);
     window.addEventListener("pdf-tool-change", this.setTool);
   }
@@ -77,6 +82,27 @@ export default class MouseFollower extends Component {
     document.addEventListener("selectionchange", this.handleSelectionChange);
   }
 
+  updateFocus(event) {
+    const pageElement = _.find(event.path, (e) => e.classList && e.classList.contains("page"));
+    if (pageElement) {
+      const pageNumber = pageElement.dataset.pageNumber;
+      const activeHighlights = _.uniq(
+        Array.from(pageElement.getElementsByClassName("highlight-annotation"))
+          .filter((e) => {
+            const rect = e.getBoundingClientRect();
+            return (
+              rect.left <= event.clientX &&
+              rect.right >= event.clientX &&
+              rect.top <= event.clientY &&
+              rect.bottom >= event.clientY
+            );
+          })
+          .map((e) => e.dataset.annotationId)
+      );
+      emitEvent("app-page-focus", { pageNumber, activeHighlights }, /*suppressLog*/ true);
+    }
+  }
+
   handleClick(e) {
     // do not overload on main PDF view if in a selection mode.
     // there's default selection stuff we want to preserve.
@@ -89,6 +115,7 @@ export default class MouseFollower extends Component {
 
   handleMouseMove(e) {
     if (this.state.showToolOption) return;
+    this.updateFocus(e);
     this.setState({
       cursorLocation: { x: e.clientX, y: e.clientY },
       cursorVisible: true,

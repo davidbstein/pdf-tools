@@ -56,6 +56,7 @@ import {
 import { node } from "prop-types";
 import { Logger } from "../helpers";
 import { colorToHex } from "./annotationHelpers/colorTools";
+import _ from "lodash";
 
 const logger = new Logger("DocProxy");
 

@@ -79,25 +79,25 @@ export function annotationToDivs(annotationDict, pageLeaf) {
   if (["/Highlight", "/Underline"].indexOf(annotationDict["/Subtype"]) < 0) return [];
   const divs = [];
   for (let rect of quadPointArrayToRects(annotationDict["/QuadPoints"], pageLeaf)) {
+    const refNumber = annotationDict.ref.objectNumber;
     const color = colorToHex(annotationDict["/C"]);
     const div = document.createElement("div");
-    div.setAttribute("data-annotation-id", `${annotationDict.ref.objectNumber}R`);
-    div.classList = ["highlight-annotation"];
+    div.setAttribute("data-annotation-id", `${refNumber}R`);
+    div.classList = `highlight-annotation annotation-ref-${refNumber}R`;
     div.style.top = `${rect.top}%`;
     div.style.left = `${rect.left}%`;
     div.style.bottom = `${rect.bottom}%`;
     div.style.right = `${rect.right}%`;
     if (annotationDict["/Subtype"] === "/Highlight") {
       div.style.backgroundColor = color;
+      div.classList.add("highlight-annot-subtype");
     }
     if (annotationDict["/Subtype"] === "/Underline") {
       div.style.borderBottom = `2px solid ${color}`;
       div.style.backgroundColor = "transparent";
+      div.classList.add("underline-annot-subtype");
     }
     div.style.opacity = annotationDict["/CA"];
-    div.onclick = () => {
-      console.log(annotationDict);
-    };
     divs.push(div);
   }
   return divs;

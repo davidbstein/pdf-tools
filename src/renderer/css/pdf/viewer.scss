@@ -129,7 +129,8 @@
         .highlight-annotation {
           position: absolute;
           opacity: 50%;
-          background-color: rgb(255, 255, 209);
+          //background-color: rgb(255, 255, 209);
+          background-color: red;
           &:hover {
             border-width: 1px;
             border-color: rgba(0, 0, 0, 0.2);

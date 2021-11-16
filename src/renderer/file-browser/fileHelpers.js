@@ -1,5 +1,5 @@
 import fs from "fs";
-
+import _ from "lodash";
 /**
  * if no file is being watches: begins watching filePath for updates using `fs.watchFile`
  * if the file being watches is not the same as filePath: reloads the page.

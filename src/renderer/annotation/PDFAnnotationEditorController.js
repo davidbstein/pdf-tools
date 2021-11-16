@@ -64,6 +64,7 @@ export default class PDFAnnotationEditor {
 
     this.pdfjsEventBus.on("annotationlayerrendered", () => {
       logger.info("annot layer rendered");
+      this._initialize_search();
     });
     this._initialize();
   }
@@ -78,6 +79,18 @@ export default class PDFAnnotationEditor {
     //const filebuffer = fs.readFileSync(readTarget).buffer;
     //await this._initialize_annotation_manager(filebuffer);
     await this._initialize_annotation_manager(readTarget);
+  }
+
+  _initialize_search() {
+    if (this.findController != undefined) return;
+    this.linkService = this.pdfViewer.linkService;
+    this.findController = new PDFJSViewer.PDFFindController({
+      linkService: this.linkService,
+      eventBus: this.pdfjsEventBus,
+    });
+    this.findController.setDocument(this.pdfViewer.pdfDocument);
+    this.pdfViewer.findController = this.findController;
+    logger.log(this.findController);
   }
 
   /**
@@ -147,6 +160,7 @@ export default class PDFAnnotationEditor {
     window.addEventListener("app-set-highlight-render-layer", (event) =>
       this.setHighlightRenderLayer(event.detail)
     );
+    window.addEventListener("app-page-focus", (event) => this.updateFocus(event.detail));
   }
 
   /**
@@ -206,16 +220,22 @@ export default class PDFAnnotationEditor {
   updateCurrentPageUI(event) {
     const { first, last } = this.pdfViewer._getVisiblePages();
     const outline = this.highlightManager.docProxy.listOutlines()[0];
-    const path = outlineToBreadcrumb(outline, first.id);
-    this.reactComponent.setCurrentPage({
+    const outlinePath = outlineToBreadcrumb(outline, first.id);
+    this.reactComponent.setState({
       pageNumber: event.pageNumber,
       pageLabel: event.pageLabel,
       firstPageIdx: first.id,
       lastPageIdx: last.id,
       // previous: event.previous,
-      outlinePath: path,
+      outlinePath,
     });
-    logger.log(`update page to $${event.pageNumber}. New outline: ${path.join(">")}`);
+    logger.log(`update page to $${event.pageNumber}. New outline: ${outlinePath.join(">")}`);
+  }
+
+  updateFocus({ pageNumber, activeHighlights }) {
+    const outline = this.highlightManager.docProxy.listOutlines()[0];
+    const outlinePath = outlineToBreadcrumb(outline, pageNumber);
+    this.reactComponent.setState({ pageNumber, outlinePath, activeHighlights });
   }
 
   _saveViewstate() {
@@ -224,6 +244,10 @@ export default class PDFAnnotationEditor {
   }
 
   _loadViewstate() {
+    if (this._viewStateLoaded != undefined) return;
+    this._viewStateLoaded = true;
+    const viewState = this.highlightManager.docProxy.getCustomViewInfo().viewState;
+    logger.debug("loading viewstate!", viewState);
     const {
       scale,
       firstPageIdx,
@@ -232,8 +256,7 @@ export default class PDFAnnotationEditor {
       toolbar_height,
       annotationbar_width,
       highlightRenderLayer,
-    } = this.highlightManager.docProxy.getCustomViewInfo().viewState;
-    logger.debug("loading viewstate!");
+    } = viewState;
     if (sidebar_width) this.reactComponent.setState({ sidebar_width });
     if (statusbar_height) this.reactComponent.setState({ statusbar_height });
     if (toolbar_height) this.reactComponent.setState({ toolbar_height });

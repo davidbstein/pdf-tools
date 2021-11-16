@@ -40,6 +40,7 @@ export default class PdfViewer extends Component {
       firstPageIdx: 0,
       lastPageIdx: 0,
       highlightRenderLayer: 1,
+      activeHighlights: [],
     };
     this.resizeSidebar = this.resizeSidebar.bind(this);
     this.resizeToolbar = this.resizeToolbar.bind(this);
@@ -68,9 +69,6 @@ export default class PdfViewer extends Component {
       }
     });
   }
-  setCurrentPage({ firstPageIdx, lastPageIdx, pageNumber, outlinePath }) {
-    this.setState({ firstPageIdx, lastPageIdx, pageNumber, outlinePath });
-  }
   render() {
     const {
       firstPageIdx,
@@ -81,6 +79,7 @@ export default class PdfViewer extends Component {
       outline,
       current_zoom,
       scale,
+      activeHighlights,
     } = this.state;
     return (
       <div className="PdfViewer">
@@ -92,7 +91,10 @@ export default class PdfViewer extends Component {
             --statusbar-height: ${this.state.statusbar_height}px;
             --annotationbar-width: ${this.state.annotationbar_width}px;
           }
-          `}
+          ` +
+            activeHighlights
+              .map((refNumber) => `.annotation-ref-${refNumber} {box-shadow: 0 0 1px 0px;}`)
+              .join("\n")}
         </style>
         {this.state.pdf_ready ? (
           <div>

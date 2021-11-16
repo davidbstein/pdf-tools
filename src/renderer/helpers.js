@@ -127,8 +127,8 @@ export class Logger {
 
 const eventLogger = new Logger("eventEmitter");
 
-export function emitEvent(eventName, eventData) {
+export function emitEvent(eventName, eventData, suppressLog = false) {
   const event = new CustomEvent(eventName, { detail: eventData });
-  eventLogger.log(eventName, eventData);
+  if (!suppressLog) eventLogger.debug(eventName, eventData);
   window.dispatchEvent(event);
 }
