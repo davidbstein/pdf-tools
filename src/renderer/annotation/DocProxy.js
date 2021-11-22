@@ -54,7 +54,7 @@ import {
   PDFHexString,
 } from "pdf-lib";
 import { node } from "prop-types";
-import { Logger } from "../helpers";
+import { emitEvent, Logger } from "../helpers";
 import { colorToHex } from "./annotationHelpers/colorTools";
 import _ from "lodash";
 
@@ -186,6 +186,11 @@ export default class DocProxy {
     this.doc.flush();
   }
 
+  removeOutlines() {
+    const outlines = this.listOutlines();
+    for (let outline of outlines) this.deleteOutline(outline);
+  }
+
   _genDest(page, context) {
     const [pageIdx, destDict] = [
       typeof page === "number" ? page : page[0],
@@ -207,7 +212,7 @@ export default class DocProxy {
    * [
    *  {
    *   title: "Title",
-   *   page: pageIdx | [pageIdx, {type, args]}]
+   *   pageIdx: pageIdx | [pageIdx, {type, args]}]
    *   children: [{}, {}, ...]
    *  }, {}, ...
    * ]
@@ -365,6 +370,64 @@ export default class DocProxy {
       params: annotationFunctions.params,
     };
   }
+
+  _get_outline_as_list(outlineRoot, list = [], depth = 0) {
+    const { children, ...info } = outlineRoot;
+    list.push({ info: info, depth });
+    if (children) {
+      for (let child of children) {
+        this._get_outline_as_list(child, list, depth + 1);
+      }
+    }
+    return list;
+  }
+
+  _get_root_node_from_outline_list(outlineList) {
+    const root = {
+      _root: true,
+      children: [],
+    };
+    for (let { info, depth } of outlineList) {
+      let current = root;
+      for (let i = 1; i < depth; i++) {
+        current = current.children[current.children.length - 1];
+      }
+      if (depth > 0) {
+        current.children.push({
+          ...info,
+          children: [],
+        });
+      }
+    }
+    return root;
+  }
+
+  _replace_outline(newOutline) {
+    logger.log("new outline:", newOutline);
+    this.removeOutlines();
+    this.createOutline(newOutline);
+    emitEvent("pdf-outline-changed");
+  }
+
+  addOutlineItem(info) {
+    const outlineRoot = this.listOutlines()?.[0] || this.createOutline([]);
+    const outline = this._serializeOutlineNode(outlineRoot);
+    const outlineList = this._get_outline_as_list(outline);
+    outlineList.push({ info, depth: 1 });
+    const newList = _.sortBy(outlineList, (o) => o.info.pageIdx);
+    const newOutline = this._get_root_node_from_outline_list(newList);
+    return {
+      undoFn: () => {
+        this._replace_outline(outline.children);
+      },
+      redoFn: () => {
+        this._replace_outline(newOutline.children);
+      },
+      params: info,
+    };
+  }
+
+  removeOutlineItem() {}
 
   listHighlightsForPageIdx(pageIdx) {
     const page = this.pages[pageIdx];

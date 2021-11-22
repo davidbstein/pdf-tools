@@ -67,18 +67,22 @@ export default class HighlightManager {
   _doMarkupSelection(selection) {
     const action = this.docProxy.createHighlight({ ...selection, ...this.currentTool });
     logger.debug(action);
-    action.redoFn();
-    this.undoQueue.push(action);
-    this.redoQueue = [];
+    this._doAction(action);
     this.clearSelection ? document.getSelection().removeAllRanges() : null;
     this.annotationEditor.autoSave();
     this._drawPage(action.params.pageIdx);
   }
 
+  _doAction(action) {
+    action.redoFn();
+    this.undoQueue.push(action);
+    this.redoQueue = [];
+  }
+
   _doEditSelection(selection) {
     if (this.currentTool.type == ToolTypes.OUTLINE) {
       emitEvent("app-outline-add-item", {
-        text: selection.text,
+        title: selection.text,
         pageNumber: selection.pageNumber,
         pageIdx: selection.pageIdx,
       });
@@ -213,6 +217,15 @@ export default class HighlightManager {
     }`;
     this.styleTag.innerHTML = rawCSS;
   }
+
+  addOutlineItem(item) {
+    const action = this.docProxy.addOutlineItem(item);
+    this._doAction(action);
+  }
+
+  removeOutlineItem(item) {}
+
+  updateOutlineItem(oldItem, newItem) {}
 
   getCurrentTool() {
     return this._currentTool;
