@@ -137,7 +137,7 @@ export default class PDFAnnotationEditor {
     // };
     document.addEventListener("keypress", this._saveListener);
     window.addEventListener("backend-save", this.saveFileAndAnnotations);
-    this.outlineChanged();
+    this.updateOutline();
     return this.highlightManager;
   }
 
