@@ -4,12 +4,13 @@ import Sidebar from "@/pdf-components/sidebar/Sidebar";
 import Statusbar from "@/pdf-components/Statusbar";
 import Annotationbar from "@/pdf-components/Annotationbar";
 import PDFAnnotationEditor from "@/annotation/PDFAnnotationEditorController";
+import _ from "lodash";
 
 import React, { Component } from "react";
 import "pdfjs-dist/web/pdf_viewer.css";
 import "@/css/pdf.scss";
 import { getCurrentPath } from "../actions";
-import { Logger } from "../helpers";
+import { emitEvent, Logger } from "../helpers";
 
 class LoadingScreen extends Component {
   render() {
@@ -28,39 +29,50 @@ export default class PdfViewer extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      scale: 1,
-      toolbar_height: 32,
-      sidebar_width: 200,
-      statusbar_height: 22,
-      annotationbar_width: 150,
-      pdf_ready: false,
-      pageNumber: 1,
-      page_idx: 0,
-      outlinePath: [],
-      firstPageIdx: 0,
-      lastPageIdx: 0,
-      highlightRenderLayer: 1,
       activeHighlights: [],
+      pane_size_annotationbar: 150,
+      firstPageIdx: 0,
+      highlightRenderLayer: 1,
+      lastPageIdx: 0,
+      outlinePath: [],
+      outlineRoots: [],
+      page_idx: 0,
+      pageNumber: 1,
+      pdf_ready: false,
+      scale: 1,
+      pane_size_sidebar: 200,
+      pane_size_statusbar: 22,
+      pane_size_toolbar: 32,
     };
     this.resizeSidebar = this.resizeSidebar.bind(this);
     this.resizeToolbar = this.resizeToolbar.bind(this);
     this.resizeStatusbar = this.resizeStatusbar.bind(this);
     this.resizeAnnotationbar = this.resizeAnnotationbar.bind(this);
-    this.readyForPDF = this.readyForPDF.bind(this);
+    this.readyForPDFCallback = this.readyForPDFCallback.bind(this);
+    this.fixResize = _.debounce(this.fixResize.bind(this), 100, { trailing: true, leading: false });
+    // this.fixResize = this.fixResize.bind(this);
+  }
+  fixResize(firstPageIdx) {
+    emitEvent("app-viewer-resize");
+    emitEvent("app-set-page", firstPageIdx);
   }
   resizeSidebar(newWidth) {
-    this.setState({ sidebar_width: newWidth });
+    this.setState({ pane_size_sidebar: Math.max(0, newWidth) });
+    this.fixResize(this.state.firstPageIdx);
   }
   resizeToolbar(newHeight) {
-    this.setState({ toolbar_height: newHeight });
+    this.setState({ pane_size_toolbar: Math.max(0, newHeight) });
+    this.fixResize(this.state.firstPageIdx);
   }
   resizeStatusbar(newHeight) {
-    this.setState({ statusbar_height: newHeight });
+    this.setState({ pane_size_statusbar: Math.max(0, newHeight) });
+    this.fixResize(this.state.firstPageIdx);
   }
   resizeAnnotationbar(newWidth) {
-    this.setState({ annotationbar_width: newWidth });
+    this.setState({ pane_size_annotationbar: Math.max(0, newWidth) });
+    this.fixResize(this.state.firstPageIdx);
   }
-  readyForPDF(target) {
+  readyForPDFCallback(target) {
     this.pdfEditor = window._pdf || new PDFAnnotationEditor(this.props.url, target, this);
     this.pdfEditor.pdfjsEventBus.on("pagesinit", (e) => {
       this.setState({ pdf_ready: true });
@@ -71,25 +83,26 @@ export default class PdfViewer extends Component {
   }
   render() {
     const {
-      firstPageIdx,
-      lastPageIdx,
-      pageNumber,
-      outlinePath,
-      highlightRenderLayer,
-      outline,
-      current_zoom,
-      scale,
       activeHighlights,
+      current_zoom,
+      firstPageIdx,
+      highlightRenderLayer,
+      lastPageIdx,
+      outline,
+      outlinePath,
+      outlineRoots,
+      pageNumber,
+      scale,
     } = this.state;
     return (
       <div className="PdfViewer">
         <style>
           {`
           :root {
-            --toolbar-height: ${this.state.toolbar_height}px;
-            --sidebar-width: ${this.state.sidebar_width}px;
-            --statusbar-height: ${this.state.statusbar_height}px;
-            --annotationbar-width: ${this.state.annotationbar_width}px;
+            --toolbar-height: ${this.state.pane_size_toolbar}px;
+            --sidebar-width: ${outlineRoots.length > 0 ? this.state.pane_size_sidebar : 20}px;
+            --statusbar-height: ${this.state.pane_size_statusbar}px;
+            --annotationbar-width: ${this.state.pane_size_annotationbar}px;
           }
           ` +
             activeHighlights
@@ -112,6 +125,7 @@ export default class PdfViewer extends Component {
               firstPageIdx={firstPageIdx}
               lastPageIdx={lastPageIdx}
               outlinePath={outlinePath}
+              outlineRoots={outlineRoots}
             />
             <Statusbar resize={this.resizeStatusbar} />
             <Annotationbar resize={this.resizeAnnotationbar} />
@@ -119,11 +133,7 @@ export default class PdfViewer extends Component {
         ) : (
           <LoadingScreen />
         )}
-        <Viewer
-          url={this.props.url}
-          onScaleChanged={(e) => this.displayScaleChanged(e)}
-          readyForPDF={this.readyForPDF}
-        />
+        <Viewer url={this.props.url} readyForPDF={this.readyForPDFCallback} />
       </div>
     );
   }

@@ -5,6 +5,8 @@ import { ResizeGrip } from "@/components/ResizablePanel";
 import { Logger } from "../../helpers";
 import { OutlineNode } from "./OutlineNode";
 
+const DEFAULT_WIDTH = 150;
+
 export const logger = new Logger("Sidebar");
 
 export function formatOutlineItem(titleString) {
@@ -16,9 +18,11 @@ export default class Sidebar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      outlineRoots: window.HighlightManager.docProxy.listSerializableOutlines(),
+      minimized: false,
     };
+    this.lastSize = 0;
     this.resize = this.resize.bind(this);
+    this.hide = this.hide.bind(this);
     this.handleOutlineChange = this.handleOutlineChange.bind(this);
   }
 
@@ -26,14 +30,21 @@ export default class Sidebar extends Component {
 
   resize(e) {
     this.props.resize(e.x);
+    this.lastSize = e.x;
+  }
+
+  hide(e) {
+    if (this.state.minimized) this.props.resize(this.lastSize || DEFAULT_WIDTH);
+    else this.props.resize(0);
+    this.setState({ minimized: !this.state.minimized });
   }
 
   render() {
-    const { firstPageIdx, lastPageIdx, outlinePath } = this.props;
+    const { firstPageIdx, lastPageIdx, outlinePath, outlineRoots } = this.props;
     return (
       <div id="Sidebar">
         <div id="OutlineView">
-          {this.state.outlineRoots.map((outlineRoot, index) => (
+          {outlineRoots.map((outlineRoot, index) => (
             <OutlineNode
               key={index}
               node={outlineRoot}
@@ -43,7 +54,7 @@ export default class Sidebar extends Component {
             />
           ))}
         </div>
-        <ResizeGrip resize={this.resize} />
+        <ResizeGrip resize={this.resize} hide={this.hide} />
       </div>
     );
   }

@@ -137,6 +137,9 @@ export default class PDFAnnotationEditor {
     // };
     document.addEventListener("keypress", this._saveListener);
     window.addEventListener("backend-save", this.saveFileAndAnnotations);
+    this.reactComponent.setState({
+      outlineRoots: this.highlightManager.docProxy.listSerializableOutlines(),
+    });
     return this.highlightManager;
   }
 
@@ -153,9 +156,13 @@ export default class PDFAnnotationEditor {
    * listens for notifications triggered by UI events, notified the pdf management stuff
    */
   _startUIEventListeners() {
+    window.addEventListener("app-viewer-resize", (event) =>
+      this.pdfjsEventBus.dispatch("resize", { source: this.containerDOMElement })
+    );
     window.addEventListener("app-set-zoom", (event) => this.setScale(event.detail));
     window.addEventListener("app-set-page", (event) => this.setPage(event.detail));
     window.addEventListener("app-change-outline", () => {});
+    window.addEventListener("app-oneline-add-item", (event) => this.addOutlineItem(event.detail));
     window.addEventListener("app-change-annotation-mode", () => {});
     window.addEventListener("app-set-highlight-render-layer", (event) =>
       this.setHighlightRenderLayer(event.detail)
@@ -186,6 +193,10 @@ export default class PDFAnnotationEditor {
       window.addEventListener("backend-redo", this.highlightManager.redo);
     });
   }
+
+  ///////////////////////
+  // UI event handlers //
+  ///////////////////////
 
   async redrawPage(pageIdx) {
     const page = await this.pdfViewer.getPageView(pageIdx);
@@ -237,6 +248,25 @@ export default class PDFAnnotationEditor {
     const outlinePath = outlineToBreadcrumb(outline, pageNumber);
     this.reactComponent.setState({ pageNumber, outlinePath, activeHighlights });
   }
+
+  ////////////////////////
+  // State Manipulation //
+  ////////////////////////
+  addOutlineItem({ text, pageNumber, pageIdx }) {
+    this.highlightManager.addOutlineItem(text, pageNumber, pageIdx);
+  }
+
+  removeOutlineItem({ text, pageNumber, pageIdx }) {
+    this.highlightManager.removeOutlineItem(text, pageNumber, pageIdx);
+  }
+
+  editOutlineItem({ oldText, newText, pageNumber, pageIdx }) {
+    this.highlightManager.editOutlineItem(oldText, newText, pageNumber, pageIdx);
+  }
+
+  ///////////////////////
+  // File IO functions //
+  ///////////////////////
 
   _saveViewstate() {
     logger.debug("saving viewstate!", this.reactComponent.state);

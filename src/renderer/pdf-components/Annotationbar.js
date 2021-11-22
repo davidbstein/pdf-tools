@@ -7,7 +7,7 @@ export default class AnnotationBar extends Component {
     super(props);
     this.state = {
       currentTool: ToolList[0],
-      minimized: false
+      minimized: false,
     };
     this.lastSize = 0; // not in state because not used by renderer
     this.resize = this.resize.bind(this);
@@ -15,15 +15,18 @@ export default class AnnotationBar extends Component {
     this._toolChangeListener = this._toolChangeListener.bind(this);
     addEventListener("pdf-tool-change", this._toolChangeListener);
   }
+
   resize(e) {
     this.props.resize(window.innerWidth - e.x);
     this.lastSize = window.innerWidth - e.x;
   }
+
   hide(e) {
     if (this.state.minimized) this.props.resize(this.lastSize);
     else this.props.resize(0);
-    this.setState({minimized: !this.state.minimized});
+    this.setState({ minimized: !this.state.minimized });
   }
+
   _toolChangeListener({ detail }) {
     this.setState({ currentTool: detail.tool });
   }

@@ -77,7 +77,7 @@ export default class HighlightManager {
 
   _doEditSelection(selection) {
     if (this.currentTool.type == ToolTypes.OUTLINE) {
-      emitEvent("outline-edit", {
+      emitEvent("app-outline-add-item", {
         text: selection.text,
         pageNumber: selection.pageNumber,
         pageIdx: selection.pageIdx,
@@ -139,6 +139,10 @@ export default class HighlightManager {
     );
     highlightLayerDiv.append(...toRender);
     return highlightLayerDiv;
+  }
+
+  _processSelectionInProgress() {
+    logger.log("TODO");
   }
 
   _processSelectionComplete() {
