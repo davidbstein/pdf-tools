@@ -243,7 +243,7 @@ export default class PDFAnnotationEditor {
 
   updateFocus({ pageNumber, activeHighlights }) {
     const outline = this.highlightManager.docProxy.listOutlines()[0];
-    const outlinePath = outlineToBreadcrumb(outline, pageNumber);
+    const outlinePath = outlineToBreadcrumb(outline, pageNumber - 1);
     this.reactComponent.setState({ pageNumber, outlinePath, activeHighlights });
   }
 

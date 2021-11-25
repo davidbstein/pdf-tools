@@ -21,6 +21,8 @@
 
 #file-list {
   padding-top: calc(4 * var(--top-header-padding) + var(--top-header-height));
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .clickable {
@@ -38,16 +40,33 @@
   /*expand in*/
   animation: expand-in 0.5s;
   transition: all 0.5s;
-}
-.fiv-sqo {
-  filter: grayscale(100%);
-}
-.fiv-sqo.fiv-icon-pdf {
-  filter: grayscale(0%);
-}
-
-.dir-ent-name {
-  margin: 0 4px;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  border-radius: 4px;
+  &:nth-child(even) {
+    background: #f6f6f6;
+  }
+  .fiv-sqo {
+    filter: grayscale(100%);
+  }
+  .fiv-sqo.fiv-icon-pdf {
+    filter: grayscale(0%);
+  }
+  .dir-ent-name {
+    margin: 0 4px;
+  }
+  .dir-ent-modified {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.8em;
+    color: #888;
+    text-align: left;
+    width: 20%;
+    overflow: hidden;
+    display: inline-block;
+  }
 }
 
 @keyframes expand-in {

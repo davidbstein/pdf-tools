@@ -453,11 +453,17 @@ export default class DocProxy {
   setCustomViewInfo(key, value) {
     const info = this.getCustomViewInfo();
     info[key] = value;
+    logger.log("set custom view info", key, value);
     this.doc.getInfoDict().set(_STEIN_PDF_INFO_KEY, new PDFHexString(JSON.stringify(info)));
   }
 
   getCustomViewInfo() {
-    const raw = this.doc.getInfoDict().get(_STEIN_PDF_INFO_KEY)?.value || "{}";
-    return JSON.parse(raw);
+    try {
+      const raw = this.doc.getInfoDict().get(_STEIN_PDF_INFO_KEY)?.value || "{}";
+      return JSON.parse(raw);
+    } catch (e) {
+      logger.error(e);
+      return {};
+    }
   }
 }
