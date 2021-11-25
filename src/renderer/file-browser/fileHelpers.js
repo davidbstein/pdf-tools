@@ -20,12 +20,18 @@ export function listDir(path = "/Users/stein", hidden = false) {
   const content = fs
     .readdirSync(path, { withFileTypes: true })
     .filter((dirEnt) => hidden || dirEnt.name.slice(0, 1) != ".")
-    .filter((dirEnt) => hidden || dirEnt.name.slice(0, 1) != "~");
+    .filter((dirEnt) => hidden || dirEnt.name.slice(0, 1) != "~")
+    .map((dirEnt) => ({
+      name: dirEnt.name,
+      isFile: dirEnt.isFile(),
+      isDirectory: dirEnt.isDirectory(),
+      fileInfo: dirEnt.isFile() ? fs.statSync(`${path}/${dirEnt.name}`) : null,
+    }));
   return _.sortBy(content, (dirEnt) => [
     // file or folder starts with _
     dirEnt.name.slice(0, 1) != "_",
     // folders first
-    dirEnt.isFile(),
+    dirEnt.isFile,
     // then pdfs
     dirEnt.name.slice(-4) != ".pdf",
     dirEnt.name,
