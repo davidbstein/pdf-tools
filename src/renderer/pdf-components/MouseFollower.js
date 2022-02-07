@@ -133,7 +133,11 @@ export default class MouseFollower extends Component {
     if (e.button === 0) {
       newState.showToolOption = false;
       if (this.state.pendingSelection) {
-        if (document.getSelection().rangeCount > 0) emitEvent("pdf-selection-made", e);
+        if (document.getSelection().rangeCount > 0)
+          emitEvent("pdf-selection-made", {
+            shiftKey: e.shiftKey,
+            ctrlKey: e.ctrlKey,
+          });
         newState.pendingSelection = false;
       }
     }

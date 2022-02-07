@@ -46,6 +46,7 @@ export default class Sidebar extends Component {
         <div id="OutlineView">
           {outlineRoots.map((outlineRoot, index) => (
             <OutlineNode
+              onPath={true}
               key={index}
               node={outlineRoot}
               firstPageIdx={firstPageIdx}

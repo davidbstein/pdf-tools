@@ -75,6 +75,7 @@ export class Logger {
     const backgroundWeight = Math.min(1, Math.max(0, t / b));
     this.color = averageColor("#ffffff", c, colorWeight);
     this.backgroundColor = averageColor("#000000", c, backgroundWeight);
+    window.VERBOSE = true;
   }
 
   getStackTrace() {
@@ -86,6 +87,7 @@ export class Logger {
   }
 
   _subcall(method, color, bg, args, force = false) {
+    if (window.VERBOSE == false) return;
     if (force || this.debug) {
       const trace = this.getStackTrace();
       const caller = getCaller(trace);
@@ -123,6 +125,10 @@ export class Logger {
   info() {
     this._subcall("ℹ️ info", "#44F", "#006", arguments);
   }
+
+  error() {
+    this._subcall("🚨 error", "#F00", "#600", arguments);
+  }
 }
 
 const eventLogger = new Logger("eventEmitter");
@@ -131,4 +137,8 @@ export function emitEvent(eventName, eventData, suppressLog = false) {
   const event = new CustomEvent(eventName, { detail: eventData });
   if (!suppressLog) eventLogger.debug(eventName, eventData);
   window.dispatchEvent(event);
+}
+
+export function boundValue(variable, [minVal, maxVal]) {
+  return Math.min(Math.max(variable, minVal), maxVal);
 }

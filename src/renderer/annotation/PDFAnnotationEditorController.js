@@ -145,7 +145,7 @@ export default class PDFAnnotationEditor {
     this.pdfjsEventBus.on("updateviewarea", (evt) => {
       logger.info("update view area");
     });
-    this._startHighlightManagerControllers();
+    window.addEventListener("highlight-manager-loaded", this._startHighlightManagerControllers);
     this._startUIEventListeners();
     this._startUIEventNotifiers();
   }
@@ -154,18 +154,18 @@ export default class PDFAnnotationEditor {
    * listens for notifications triggered by UI events, notified the pdf management stuff
    */
   _startUIEventListeners() {
-    window.addEventListener("app-viewer-resize", (event) =>
+    const _listen = window.addEventListener;
+    _listen("app-viewer-resize", (event) =>
       this.pdfjsEventBus.dispatch("resize", { source: this.containerDOMElement })
     );
-    window.addEventListener("app-set-zoom", (event) => this.setScale(event.detail));
-    window.addEventListener("app-set-page", (event) => this.setPage(event.detail));
-    window.addEventListener("app-change-outline", () => {});
-    window.addEventListener("app-outline-add-item", (event) => this.doAddOutlineItem(event.detail));
-    window.addEventListener("app-change-annotation-mode", () => {});
-    window.addEventListener("app-set-highlight-render-layer", (event) =>
-      this.setHighlightRenderLayer(event.detail)
-    );
-    window.addEventListener("app-page-focus", (event) => this.updateFocus(event.detail));
+    _listen("app-set-zoom", (e) => this.setScale(e.detail));
+    _listen("app-set-page", (e) => this.setPage(e.detail));
+    _listen("app-outline-add-item", (e) => this.doOutlineAddItem(e.detail));
+    _listen("app-outline-remove-item", (e) => this.doOutlineRemoveItem(e.detail));
+    _listen("app-outline-change-item-depth", (e) => this.doOutlineChangeItemDepth(e.detail));
+    _listen("app-change-annotation-mode", (e) => {});
+    _listen("app-set-highlight-render-layer", (e) => this.setHighlightRenderLayer(e.detail));
+    _listen("app-page-focus", (e) => this.updateFocus(e.detail));
   }
 
   /**
@@ -182,14 +182,12 @@ export default class PDFAnnotationEditor {
    * listens for notifications sent by the pdf backend and notifies the highlight manager
    */
   _startHighlightManagerControllers() {
-    window.addEventListener("highlight-manager-loaded", () => {
-      logger.log("highligh manager loaded! adding listeners...");
-      this.pdfjsEventBus.on("pagerendered", this.highlightManager.handlePageRendered);
-      this.pdfjsEventBus.on("pagechanging", this.highlightManager.handlePageChanging);
-      window.addEventListener("pdf-selection-made", this.highlightManager.processCurrentSelection);
-      window.addEventListener("backend-undo", this.highlightManager.undo);
-      window.addEventListener("backend-redo", this.highlightManager.redo);
-    });
+    logger.log("highligh manager loaded! adding listeners...");
+    this.pdfjsEventBus.on("pagerendered", this.highlightManager.handlePageRendered);
+    this.pdfjsEventBus.on("pagechanging", this.highlightManager.handlePageChanging);
+    window.addEventListener("pdf-selection-made", this.highlightManager.handleSelectionMade);
+    window.addEventListener("backend-undo", this.highlightManager.undo);
+    window.addEventListener("backend-redo", this.highlightManager.redo);
   }
 
   ///////////////////////
@@ -256,19 +254,17 @@ export default class PDFAnnotationEditor {
   ////////////////////////
   // State Manipulation //
   ////////////////////////
-  doAddOutlineItem(item) {
-    if (!item.title) {
-      return;
-    }
-    this.highlightManager.addOutlineItem(item);
+  doOutlineAddItem({ title, pageIdx, depth_delta }) {
+    if (!title) return;
+    this.highlightManager.addOutlineItem(title, pageIdx, depth_delta);
   }
 
-  doRemoveOutlineItem(item) {
-    this.highlightManager.removeOutlineItem(text, pageNumber, pageIdx);
+  doOutlineRemoveItem({ title, pageIdx }) {
+    this.highlightManager.removeOutlineItem(title, pageIdx);
   }
 
-  doUpdateOutlineItem({ oldItem, newItem }) {
-    this.highlightManager.editOutlineItem(oldItem, newItem);
+  doOutlineChangeItemDepth({ title, pageIdx, direction }) {
+    this.highlightManager.changeOutlineItemDepth(title, pageIdx, direction);
   }
 
   ///////////////////////

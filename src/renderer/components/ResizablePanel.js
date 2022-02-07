@@ -5,18 +5,28 @@ import React, { Profiler, useState } from "react";
  * @param {*} props
  */
 export function ResizeGrip(props) {
+  const [dragging, setDragging] = useState(false);
+  const [lastStart, setLastStart] = useState(0);
+  const [lastEnd, setLastEnd] = useState(0);
+
   const onMouseDown = (e) => {
     const fn = (e) => {
       if (e) props.resize(e);
     };
     window.addEventListener("mousemove", fn);
+    setLastStart(Date.now());
     window.addEventListener("mouseup", () => {
       window.removeEventListener("mousemove", fn);
+      setDragging(false);
+      setLastEnd(Date.now());
     });
+    setDragging(true);
   };
 
   const click = (e) => {
-    if (props.hide) props.hide();
+    const now = Date.now();
+    console.log(now - lastStart, now - lastEnd);
+    if (props.hide && now - lastStart < 100 && lastEnd - lastStart < 100) props.hide();
   };
 
   return (

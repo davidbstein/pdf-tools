@@ -15,11 +15,17 @@
     direction: ltr;
   }
 
+  #OutlineView {
+    width: calc(var(--sidebar-width) - var(--resize-grip-width));
+    user-select: none;
+  }
+
   .resize-grip {
     width: var(--resize-grip-width);
-    top: 0;
+    top: var(--toolbar-height);
     bottom: 0;
-    right: 0;
+    left: var(--sidebar-width);
+    position: fixed;
     cursor: ew-resize;
   }
 

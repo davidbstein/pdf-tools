@@ -36,7 +36,8 @@ app.on("open-url", (event, url) => {
 });
 
 app.on("ready", () => {
-  _log(`APP EVENT -- ready`);
+  _log(`APP EVENT -- ready ${process.argv.join(" . ~~~ .")}`);
+  const last_argv = process.argv.slice(-1)[0];
   initializeMenu();
   const bw = createFileBrowserWindow({ filePath: DEFAULT_DIR });
   for (let file of _state.files_to_open) {

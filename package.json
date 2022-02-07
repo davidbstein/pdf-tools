@@ -13,25 +13,9 @@
     "@babel/preset-env": "^7.15.6",
     "@babel/preset-react": "^7.14.5",
     "babel-loader": "^8.2.2",
-    "crypto-js": "^4.1.1",
-    "css-loader": "^3.6.0",
     "electron": "*",
     "electron-builder": "^22.13.1",
-    "electron-context-menu": "^3.1.1",
-    "electron-webpack": "*",
-    "file-icon-vectors": "^1.0.0",
-    "file-type": "^16.5.3",
-    "lodash": "^4.17.21",
-    "pdf-lib": "^1.16.0",
-    "pdfjs-dist": "^2.2.228",
-    "prop-types": "^15.7.2",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "sass": "*",
-    "sass-loader": "10",
-    "source-map": "*",
-    "sourcemapped-stacktrace": "^1.1.11",
-    "worker-loader": "^3.0.8"
+    "electron-packager": "^15.4.0"
   },
   "repository": {
     "type": "git",
@@ -69,7 +53,8 @@
     "compile": "electron-webpack",
     "dist": "yarn compile && electron-builder",
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null",
-    "build": "electron-webpack && yarn compile && electron-builder"
+    "build": "electron-webpack && yarn compile && electron-builder",
+    "pack": "electron-builder --dir"
   },
   "build": {
     "appId": "com.stein.pdf-tools",
@@ -87,27 +72,22 @@
     "productName": "Stein's PDF Notetaking Tools"
   },
   "dependencies": {
-    "@babel/plugin-transform-runtime": "^7.15.0",
-    "@babel/preset-env": "^7.15.6",
-    "@babel/preset-react": "^7.14.5",
-    "babel-loader": "^8.2.2",
     "crypto-js": "^4.1.1",
     "css-loader": "^3.6.0",
-    "electron": "*",
-    "electron-builder": "^22.13.1",
     "electron-context-menu": "^3.1.1",
     "electron-webpack": "*",
     "file-icon-vectors": "^1.0.0",
     "file-type": "^16.5.3",
     "lodash": "^4.17.21",
-    "pdf-lib": "^1.16.0",
-    "pdfjs-dist": "^2.2.228",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^2.10.377",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "sass": "*",
+    "sass": "^1.43.5",
     "sass-loader": "10",
     "source-map": "*",
+    "source-map-support": "^0.5.21",
     "sourcemapped-stacktrace": "^1.1.11",
     "worker-loader": "^3.0.8"
   }

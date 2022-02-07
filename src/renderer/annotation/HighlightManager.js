@@ -79,12 +79,13 @@ export default class HighlightManager {
     this.redoQueue = [];
   }
 
-  _doEditSelection(selection) {
+  _doEditSelection(selection, { shiftKey, ctrlKey, altKey }) {
     if (this.currentTool.type == ToolTypes.OUTLINE) {
       emitEvent("app-outline-add-item", {
         title: selection.text,
         pageNumber: selection.pageNumber,
         pageIdx: selection.pageIdx,
+        depth_delta: shiftKey ? 1 : ctrlKey ? -1 : 0,
       });
     }
   }
@@ -149,13 +150,13 @@ export default class HighlightManager {
     logger.log("TODO");
   }
 
-  _processSelectionComplete() {
+  _processSelectionComplete({ shiftKey, ctrlKey, altKey }) {
     const selection = currentSelection(this.docProxy);
     if (ToolCategories.MARKUP_TYPES.includes(this.currentTool.type)) {
       if (selection != null) this._doMarkupSelection(selection);
     }
     if (ToolCategories.EDITOR_TYPES.includes(this.currentTool.type)) {
-      if (selection != null) this._doEditSelection(selection);
+      if (selection != null) this._doEditSelection(selection, { shiftKey, ctrlKey, altKey });
     }
   }
 
@@ -218,14 +219,20 @@ export default class HighlightManager {
     this.styleTag.innerHTML = rawCSS;
   }
 
-  addOutlineItem(item) {
-    const action = this.docProxy.addOutlineItem(item);
+  addOutlineItem(title, pageIdx, depth_delta) {
+    const action = this.docProxy.addOutlineItem(title, pageIdx, depth_delta);
     this._doAction(action);
   }
 
-  removeOutlineItem(item) {}
+  removeOutlineItem(title, pageIdx) {
+    const action = this.docProxy.removeOutlineItem(title, pageIdx);
+    this._doAction(action);
+  }
 
-  updateOutlineItem(oldItem, newItem) {}
+  changeOutlineItemDepth(title, pageIdx, direction) {
+    const action = this.docProxy.changeOutlineItemDepth(title, pageIdx, direction);
+    this._doAction(action);
+  }
 
   getCurrentTool() {
     return this._currentTool;
@@ -251,8 +258,8 @@ export default class HighlightManager {
     this._processUndo();
   }
 
-  processCurrentSelection() {
-    this._processSelectionComplete();
+  handleSelectionMade({ detail: { shiftKey, ctrlKey, altKey } }) {
+    this._processSelectionComplete({ shiftKey, ctrlKey, altKey });
   }
 
   previewCurrentSelection() {

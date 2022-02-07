@@ -54,7 +54,7 @@ import {
   PDFHexString,
 } from "pdf-lib";
 import { node } from "prop-types";
-import { emitEvent, Logger } from "../helpers";
+import { emitEvent, Logger, boundValue } from "@/helpers";
 import { colorToHex } from "./annotationHelpers/colorTools";
 import _ from "lodash";
 
@@ -196,7 +196,6 @@ export default class DocProxy {
       typeof page === "number" ? page : page[0],
       typeof page === "number" ? { type: "XYZ", args: [null, null, null] } : page[1],
     ];
-    logger.info("GEN DEST", pageIdx, destDict);
     let pageRef = this.pages[pageIdx].ref;
     let dest = PDFArray.withContext(context);
     dest.push(pageRef);
@@ -259,7 +258,6 @@ export default class DocProxy {
         break;
       }
     }
-    logger.info("ROOT NODE", root);
     // initialize Map that will become the PDFDict
     console.groupCollapsed(" ~created outline!~ ");
     for (let { info, ...rest } of all_items) {
@@ -383,14 +381,16 @@ export default class DocProxy {
   }
 
   _get_root_node_from_outline_list(outlineList) {
+    const sortedOutlineList = _.orderBy(outlineList, ["info.pageIdx", "depth"]);
     const root = {
       _root: true,
       children: [],
     };
-    for (let { info, depth } of outlineList) {
+    for (let item of sortedOutlineList) {
+      const { info, depth } = item;
       let current = root;
       for (let i = 1; i < depth; i++) {
-        current = current.children[current.children.length - 1];
+        if (current.children.length > 0) current = current.children[current.children.length - 1];
       }
       if (depth > 0) {
         current.children.push({
@@ -409,12 +409,28 @@ export default class DocProxy {
     emitEvent("pdf-outline-changed");
   }
 
-  addOutlineItem(info) {
+  _get_depth_of_previous_outline_item(outlineList, { title, pageIdx }) {
+    return _.reduce(outlineList, (closest_item, current) => {
+      if (current.info.pageIdx == pageIdx && current.info.title == title) return closest_item;
+      if (current.info.pageIdx > pageIdx) return closest_item;
+      if (current.info.pageIdx > closest_item.info.pageIdx) return current;
+      if (current.info.pageIdx < closest_item.info.pageIdx) return closest_item;
+      if (current.depth >= closest_item.depth) return current;
+      return closest_item;
+    }).depth;
+  }
+
+  addOutlineItem(title, pageIdx, depth_delta = 0) {
+    const info = { title, pageIdx };
     const outlineRoot = this.listOutlines()?.[0] || this.createOutline([]);
     const outline = this._serializeOutlineNode(outlineRoot);
     const outlineList = this._get_outline_as_list(outline);
-    outlineList.push({ info, depth: 1 });
-    const newList = _.sortBy(outlineList, (o) => o.info.pageIdx);
+    const parentItemDepth = this._get_depth_of_previous_outline_item(outlineList, info);
+    outlineList.push({
+      info,
+      depth: boundValue(parentItemDepth + depth_delta, [1, parentItemDepth + 2]),
+    });
+    const newList = outlineList.filter((o) => o.info.pageIdx >= 0 || o.depth == 0);
     const newOutline = this._get_root_node_from_outline_list(newList);
     return {
       undoFn: () => {
@@ -427,7 +443,44 @@ export default class DocProxy {
     };
   }
 
-  removeOutlineItem() {}
+  removeOutlineItem(title, pageIdx) {
+    const outlineRoot = this.listOutlines()?.[0] || this.createOutline([]);
+    const outline = this._serializeOutlineNode(outlineRoot);
+    const outlineList = this._get_outline_as_list(outline);
+    const newList = outlineList.filter((o) => o.info.title != title || o.info.pageIdx != pageIdx);
+    const newOutline = this._get_root_node_from_outline_list(newList);
+    return {
+      undoFn: () => {
+        this._replace_outline(outline.children);
+      },
+      redoFn: () => {
+        this._replace_outline(newOutline.children);
+      },
+      params: { title, pageIdx },
+    };
+  }
+
+  changeOutlineItemDepth(title, pageIdx, direction = 1) {
+    const outlineRoot = this.listOutlines()?.[0] || this.createOutline([]);
+    const oldOutline = this._serializeOutlineNode(outlineRoot);
+    const outline = this._serializeOutlineNode(outlineRoot);
+    const outlineList = this._get_outline_as_list(outline);
+    const item = _.find(outlineList, (o) => o.info.title == title && o.info.pageIdx == pageIdx);
+    const maxItemDepth = this._get_depth_of_previous_outline_item(outlineList, item);
+    // the "+2" is wrong. This is a stop-gap measure because I don't track position on the page
+    // in outline info right now. I need to add that.
+    item.depth = boundValue(item.depth + direction, [1, maxItemDepth + 2]);
+    const newOutline = this._get_root_node_from_outline_list(outlineList);
+    return {
+      undoFn: () => {
+        this._replace_outline(oldOutline.children);
+      },
+      redoFn: () => {
+        this._replace_outline(newOutline.children);
+      },
+      params: { title, pageIdx },
+    };
+  }
 
   listHighlightsForPageIdx(pageIdx) {
     const page = this.pages[pageIdx];
